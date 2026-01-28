@@ -3,65 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Import & Cetak Massal</title>
+    <title>Super Admin - Manajemen Data & History</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
         @media print {
             body * { visibility: hidden; }
             #areaCetakMassal, #areaCetakMassal * { visibility: visible; }
-            #areaCetakMassal {
-                position: absolute; left: 0; top: 0; width: 100%;
-                display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px;
-            }
+            #areaCetakMassal { position: absolute; left: 0; top: 0; width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; }
             .no-print { display: none !important; }
         }
-        .kartu-mini {
-            width: 85mm; height: 50mm; border: 1px solid #ccc;
-            padding: 10px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; background: white;
-            page-break-inside: avoid;
-        }
+        .kartu-mini { width: 85mm; height: 50mm; border: 1px solid #000; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-inside: avoid; }
     </style>
 </head>
-<body class="bg-slate-100 p-4">
-
+<body class="bg-slate-50 p-4 md:p-8">
     <div class="max-w-6xl mx-auto no-print">
-        <div class="bg-indigo-900 text-white p-6 rounded-3xl mb-6 flex justify-between items-center shadow-xl">
-            <h1 class="font-black italic">DATABASE SISWA & CETAK MASAL 📋</h1>
-            <a href="dashboard-kantin.html" class="bg-indigo-700 px-4 py-2 rounded-xl text-xs">KEMBALI</a>
+        <div class="bg-indigo-900 text-white p-6 rounded-[2rem] shadow-xl mb-6 flex justify-between items-center">
+            <h1 class="font-black italic uppercase tracking-widest text-sm">Admin Control Panel</h1>
+            <a href="dashboard-kantin.html" class="bg-white text-indigo-900 px-4 py-2 rounded-xl text-[10px] font-black">DASHBOARD</a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border-2 border-indigo-100">
-                <h3 class="text-xs font-black text-indigo-900 mb-4 uppercase">1. Import Data Excel (ID, Nama, Saldo)</h3>
-                <input type="file" id="inputExcel" accept=".xlsx, .xls" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-4">
-                <button onclick="prosesExcel()" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-emerald-700 transition-all text-xs">UNGGAH KE DATABASE 🚀</button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-indigo-50">
+                <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic">Manajemen Siswa</h3>
+                <div class="space-y-2">
+                    <input type="text" id="idSiswa" placeholder="ID Siswa" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs">
+                    <input type="text" id="namaSiswa" placeholder="Nama Siswa" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs">
+                    <input type="number" id="saldoSiswa" placeholder="Saldo" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs">
+                    <button onclick="simpanManual()" class="w-full bg-indigo-600 text-white font-black py-3 rounded-xl text-[10px] hover:bg-indigo-700">SIMPAN DATA</button>
+                    <div class="py-2 border-t mt-4">
+                        <p class="text-[9px] font-bold text-slate-400 mb-2 uppercase">Import Excel (ID, Nama, Saldo)</p>
+                        <input type="file" id="inputExcel" class="text-[9px] mb-2">
+                        <button onclick="prosesExcel()" class="w-full bg-emerald-500 text-white font-black py-2 rounded-xl text-[10px]">UNGGAH EXCEL 🚀</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border-2 border-indigo-100 text-center">
-                <h3 class="text-xs font-black text-indigo-900 mb-4 uppercase">2. Cetak Kolektif</h3>
-                <p class="text-[10px] text-slate-400 mb-4 italic text-center">Gunakan tombol di bawah setelah data muncul di tabel</p>
-                <button onclick="siapkanCetakMassal()" class="bg-slate-900 text-white font-black px-8 py-3 rounded-xl shadow-lg hover:scale-105 transition-all text-xs">SIAPKAN KARTU UNTUK DICETAK 🖨️</button>
+            <div class="lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm overflow-hidden border">
+                <div class="p-4 bg-slate-50 border-b flex justify-between">
+                    <h3 class="text-[10px] font-black text-slate-400">DAFTAR SISWA</h3>
+                    <button onclick="siapkanCetakMassal()" class="bg-slate-900 text-white px-4 py-1 rounded-full text-[9px] font-bold">CETAK SEMUA KARTU 🖨️</button>
+                </div>
+                <div class="max-h-[300px] overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <tbody id="tabelSiswa" class="divide-y divide-slate-50 italic"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50">
-                    <tr class="text-[10px] font-black uppercase border-b">
-                        <th class="p-4">ID SISWA</th>
-                        <th class="p-4">NAMA LENGKAP</th>
-                        <th class="p-4">SALDO</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelSiswa" class="divide-y divide-slate-100"></tbody>
-            </table>
+        <div class="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border">
+            <div class="p-4 bg-orange-50 border-b"><h3 class="text-[10px] font-black text-orange-900">RIWAYAT BELANJA DETAIL</h3></div>
+            <div class="max-h-[400px] overflow-y-auto italic">
+                <table class="w-full text-left text-[11px]">
+                    <thead class="bg-slate-50 sticky top-0 uppercase font-black text-slate-400">
+                        <tr><th class="p-4">Waktu</th><th class="p-4">Nama Siswa</th><th class="p-4">Stan</th><th class="p-4">Menu</th><th class="p-4 text-right">Total</th></tr>
+                    </thead>
+                    <tbody id="tabelHistory" class="divide-y divide-slate-100 font-bold"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -80,74 +84,54 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. FUNGSI IMPORT EXCEL
+        function simpanManual() {
+            const id = document.getElementById('idSiswa').value;
+            const nama = document.getElementById('namaSiswa').value;
+            const saldo = parseInt(document.getElementById('saldoSiswa').value);
+            if(id && nama) db.ref('kantin_users/'+id).set({nama, saldo}).then(()=>alert("Tersimpan"));
+        }
+
         function prosesExcel() {
             const file = document.getElementById('inputExcel').files[0];
-            if(!file) return alert("Pilih file Excel dulu Pak!");
-
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
-
-                if(confirm(`Siap mengunggah ${rows.length} data siswa?`)) {
-                    rows.forEach(row => {
-                        // Sesuaikan nama kolom di Excel Bapak (ID, Nama, Saldo)
-                        db.ref('kantin_users/' + row.ID).set({
-                            nama: row.Nama,
-                            saldo: parseInt(row.Saldo)
-                        });
-                    });
-                    alert("Import Selesai!");
-                }
+                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                rows.forEach(r => db.ref('kantin_users/'+r.ID).set({nama: r.Nama, saldo: parseInt(r.Saldo)}));
+                alert("Berhasil mengunggah " + rows.length + " siswa");
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // 2. TAMPILKAN DATA DI TABEL
-        db.ref('kantin_users').on('value', snapshot => {
-            const table = document.getElementById('tabelSiswa');
-            table.innerHTML = "";
-            snapshot.forEach(child => {
-                const s = child.val();
-                table.innerHTML += `<tr class="text-xs font-bold">
-                    <td class="p-4">${child.key}</td>
-                    <td class="p-4 uppercase">${s.nama}</td>
-                    <td class="p-4 text-green-600 font-black italic">Rp ${s.saldo.toLocaleString()}</td>
-                </tr>`;
+        db.ref('kantin_users').on('value', snap => {
+            const tbody = document.getElementById('tabelSiswa');
+            tbody.innerHTML = "";
+            snap.forEach(c => {
+                tbody.innerHTML += `<tr class="border-b"><td class="p-3 font-black text-indigo-600">${c.key}</td><td class="p-3 uppercase">${c.val().nama}</td><td class="p-3 text-right text-emerald-600">Rp ${c.val().saldo.toLocaleString()}</td></tr>`;
             });
         });
 
-        // 3. FUNGSI SIAPKAN CETAK MASSAL
+        db.ref('kantin_laporan').on('value', snap => {
+            const tbody = document.getElementById('tabelHistory');
+            tbody.innerHTML = "";
+            let list = [];
+            snap.forEach(c => list.push(c.val()));
+            list.reverse().forEach(d => {
+                tbody.innerHTML += `<tr><td class="p-3 text-slate-400">${d.waktu}</td><td class="p-3 text-indigo-600 uppercase">${d.namaSiswa}</td><td class="p-3"><span class="bg-slate-100 p-1 rounded text-[9px]">${d.stan}</span></td><td class="p-3 text-slate-500">${d.item}</td><td class="p-3 text-right text-orange-600 font-black">Rp ${d.total.toLocaleString()}</td></tr>`;
+            });
+        });
+
         function siapkanCetakMassal() {
             const area = document.getElementById('areaCetakMassal');
-            area.innerHTML = ""; // Bersihkan dulu
-            
-            db.ref('kantin_users').once('value', snapshot => {
-                snapshot.forEach(child => {
-                    const s = child.val();
-                    const id = child.key;
-                    
-                    // Buat elemen kartu
+            area.innerHTML = "";
+            db.ref('kantin_users').once('value', snap => {
+                snap.forEach(c => {
                     const div = document.createElement('div');
                     div.className = "kartu-mini";
-                    div.innerHTML = `
-                        <p style="font-size: 8px; font-weight: 900; margin-bottom: 5px;">KARTU E-KANTIN</p>
-                        <svg id="bc_${id}"></svg>
-                        <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; margin-top: 5px;">${s.nama}</p>
-                        <p style="font-size: 8px; color: #666;">ID: ${id}</p>
-                    `;
+                    div.innerHTML = `<p style="font-size:8px;font-weight:900">KARTU E-KANTIN</p><svg id="bc_${c.key}"></svg><p style="font-size:10px;font-weight:900;text-transform:uppercase">${c.val().nama}</p><p style="font-size:8px">ID: ${c.key}</p>`;
                     area.appendChild(div);
-                    
-                    // Generate Barcode
-                    JsBarcode(`#bc_${id}`, id, {
-                        format: "CODE128", width: 1.5, height: 40, displayValue: false
-                    });
+                    JsBarcode("#bc_"+c.key, c.key, {format:"CODE128", width:1.5, height:40, displayValue:false});
                 });
-                
-                alert("Kartu sudah siap! Tekan OK lalu tekan Ctrl+P (Cetak)");
                 window.print();
             });
         }
