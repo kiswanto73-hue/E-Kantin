@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Monitoring E-Kantin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans">
+
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-indigo-900 p-8 rounded-[2.5rem] shadow-2xl border-b-8 border-yellow-400 mb-8 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-black text-white italic tracking-tighter">REKAP TRANSAKSI KANTIN 📈</h1>
+                <p class="text-indigo-300 font-bold text-xs uppercase tracking-widest">Pantauan Penjualan Realtime</p>
+            </div>
+            <div class="text-right">
+                <p class="text-white/50 text-[10px] font-bold uppercase">Total Omzet Hari Ini</p>
+                <h2 id="totalOmzet" class="text-3xl font-black text-yellow-400">Rp 0</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border-l-8 border-green-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Total Transaksi</p>
+                <h3 id="countTrans" class="text-2xl font-black text-slate-700">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border-l-8 border-blue-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Siswa Terdaftar</p>
+                <h3 id="countSiswa" class="text-2xl font-black text-slate-700">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border-l-8 border-orange-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Stan Teraktif</p>
+                <h3 id="bestStan" class="text-2xl font-black text-slate-700">-</h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden border">
+                <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
+                    <h4 class="font-black text-indigo-900 text-sm uppercase">Aktivitas Terkini</h4>
+                    <span class="animate-pulse flex h-2 w-2 rounded-full bg-red-500"></span>
+                </div>
+                <div class="overflow-x-auto max-h-[400px]">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-100 sticky top-0">
+                            <tr class="text-[9px] font-black text-slate-500 uppercase">
+                                <th class="p-4">Waktu</th>
+                                <th class="p-4">Siswa</th>
+                                <th class="p-4">Stan</th>
+                                <th class="p-4 text-right">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listTrans" class="divide-y divide-slate-50 text-[11px] font-bold">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border flex flex-col items-center justify-center">
+                <h4 class="font-black text-indigo-900 text-sm uppercase mb-6">Distribusi Penjualan Per Stan</h4>
+                <canvas id="chartStan" width="300" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const config = { databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        firebase.initializeApp(config);
+        const db = firebase.database();
+
+        let myChart = null;
+
+        // LOAD STATS SISWA
+        db.ref('kantin_users').on('value', snap => {
+            document.getElementById('countSiswa').innerText = snap.numChildren();
+        });
+
+        // LOAD TRANSAKSI REALTIME
+        db.ref('kantin_transactions').limitToLast(50).on('value', snapshot => {
+            const list = document.getElementById('listTrans');
+            let total = 0;
+            let transCount = 0;
+            let stanCounts = {};
+            list.innerHTML = "";
+
+            if (snapshot.exists()) {
+                // Balik data agar yang terbaru di atas
+                let data = [];
+                snapshot.forEach(child => {
+                    const d = child.val();
+                    data.unshift(d);
+                    
+                    // Hitung Omzet
+                    total += d.nominal;
+                    transCount++;
+
+                    // Hitung Stan mana yang paling laris
+                    stanCounts[d.stan] = (stanCounts[d.stan] || 0) + d.nominal;
+                });
+
+                data.forEach(d => {
+                    list.innerHTML += `
+                        <tr class="hover:bg-indigo-50 transition-all">
+                            <td class="p-4 text-slate-400 font-normal">${d.waktu.split(',')[1]}</td>
+                            <td class="p-4 font-black uppercase text-indigo-700">${d.nama_siswa}</td>
+                            <td class="p-4"><span class="bg-slate-100 px-2 py-1 rounded-md">${d.stan}</span></td>
+                            <td class="p-4 text-right font-black text-green-600">Rp ${d.nominal.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+
+                // Update UI Summary
+                document.getElementById('totalOmzet').innerText = "Rp " + total.toLocaleString();
+                document.getElementById('countTrans').innerText = transCount;
+                
+                // Cari Stan Teraktif
+                let topStan = Object.keys(stanCounts).reduce((a, b) => stanCounts[a] > stanCounts[b] ? a : b, "-");
+                document.getElementById('bestStan').innerText = topStan;
+
+                // Update Grafik
+                updateChart(stanCounts);
+            }
+        });
+
+        function updateChart(stanData) {
+            const ctx = document.getElementById('chartStan').getContext('2d');
+            const labels = Object.keys(stanData);
+            const values = Object.values(stanData);
+
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#6366f1', '#fbbf24', '#10b981', '#f43f5e', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
