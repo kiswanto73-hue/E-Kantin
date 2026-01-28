@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Saldo Siswa</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-indigo-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-6 text-center">
+        <h1 class="text-2xl font-black text-indigo-900 mb-2 italic">SELF-SERVICE 📱</h1>
+        <p class="text-xs font-bold text-slate-400 uppercase mb-6">Cek Saldo & Riwayat Belanja</p>
+
+        <div id="areaScanner" class="space-y-4">
+            <div id="reader" class="rounded-2xl overflow-hidden border-4 border-dashed border-indigo-100"></div>
+            <button onclick="mulaiScan()" id="btnScan" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all">
+                MULAI SCAN KARTU 📸
+            </button>
+        </div>
+
+        <div id="hasilCek" class="hidden space-y-6">
+            <div class="bg-indigo-50 p-6 rounded-[2rem] border-2 border-indigo-100">
+                <p class="text-[10px] font-black text-indigo-400 uppercase italic">Nama Siswa:</p>
+                <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase">-</h2>
+                <div class="my-4 border-t border-indigo-200"></div>
+                <p class="text-[10px] font-black text-indigo-400 uppercase italic">Sisa Saldo:</p>
+                <h2 id="saldoSiswa" class="text-3xl font-black text-emerald-600">Rp 0</h2>
+            </div>
+
+            <div class="text-left">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-3 px-2 italic">Riwayat 3 Belanja Terakhir:</h3>
+                <div id="listRiwayat" class="space-y-2">
+                    </div>
+            </div>
+
+            <button onclick="location.reload()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl text-xs uppercase">Tutup & Cek Lainnya</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let html5QrCode;
+
+        function mulaiScan() {
+            document.getElementById('btnScan').classList.add('hidden');
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+                html5QrCode.stop();
+                cariDataSiswa(decodedText.trim());
+            });
+        }
+
+        function cariDataSiswa(id) {
+            // 1. Ambil Data Profil & Saldo
+            db.ref('kantin_users/' + id).once('value', (snapshot) => {
+                const user = snapshot.val();
+                if (!user) {
+                    alert("ID Kartu tidak terdaftar!");
+                    location.reload();
+                    return;
+                }
+
+                document.getElementById('areaScanner').classList.add('hidden');
+                document.getElementById('hasilCek').classList.remove('hidden');
+                document.getElementById('namaSiswa').innerText = user.nama;
+                document.getElementById('saldoSiswa').innerText = "Rp " + user.saldo.toLocaleString();
+
+                // 2. Ambil Riwayat Belanja (3 Terakhir)
+                db.ref('kantin_laporan').orderByChild('idSiswa').equalTo(id).limitToLast(3).once('value', (snap) => {
+                    const list = document.getElementById('listRiwayat');
+                    list.innerHTML = "";
+                    
+                    let riwayatArr = [];
+                    snap.forEach(c => riwayatArr.push(c.val()));
+                    
+                    if(riwayatArr.length === 0) {
+                        list.innerHTML = `<p class="text-[10px] text-slate-400 text-center italic">Belum ada riwayat belanja</p>`;
+                    } else {
+                        riwayatArr.reverse().forEach(data => {
+                            list.innerHTML += `
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <p class="text-[10px] text-indigo-600 font-bold uppercase">${data.item}</p>
+                                    <div class="flex justify-between text-[9px] text-slate-400 font-bold mt-1">
+                                        <span>${data.waktu.split(',')[0]}</span>
+                                        <span class="text-orange-600">-Rp ${data.total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
