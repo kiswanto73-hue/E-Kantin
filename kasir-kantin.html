@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kasir E-Kantin - Scan & Bayar</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="bg-indigo-700 p-6 text-white shadow-lg flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-black italic">KASIR KANTIN 🛒</h1>
+            <p id="infoStan" class="text-[10px] text-yellow-300 font-bold uppercase">Stan: Belum Dipilih</p>
+        </div>
+        <select id="pilihStan" onchange="setStan()" class="bg-indigo-800 text-xs p-2 rounded-lg border border-indigo-500 outline-none">
+            <option value="">Pilih Stan...</option>
+            <option value="Makanan">Stan Makanan</option>
+            <option value="Minuman">Stan Minuman</option>
+            <option value="Snack">Stan Snack</option>
+        </select>
+    </div>
+
+    <div class="max-w-md mx-auto p-4 space-y-4">
+        
+        <div class="bg-white p-4 rounded-3xl shadow-sm overflow-hidden border-2 border-indigo-100">
+            <div id="reader" class="rounded-2xl overflow-hidden"></div>
+            <div id="scanResult" class="mt-4 p-4 bg-slate-100 rounded-2xl text-center hidden">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Siswa Terdeteksi:</p>
+                <h2 id="resNama" class="text-lg font-black text-indigo-900">-</h2>
+                <p id="resSaldo" class="text-green-600 font-bold">Rp 0</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl shadow-sm">
+            <h3 class="font-black text-slate-700 mb-4 text-sm uppercase">Pilih Menu & Nominal</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="addTotal(5000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">5K</button>
+                <button onclick="addTotal(10000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">10K</button>
+                <button onclick="addTotal(15000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">15K</button>
+                <button onclick="resetTotal()" class="p-4 bg-red-50 rounded-2xl font-black text-red-500 italic">Reset</button>
+            </div>
+            
+            <div class="mt-6 p-4 bg-indigo-900 rounded-2xl text-center">
+                <p class="text-white/60 text-[10px] font-bold">TOTAL TAGIHAN</p>
+                <h1 id="displayTotal" class="text-3xl font-black text-yellow-400">Rp 0</h1>
+            </div>
+        </div>
+
+        <button id="btnBayar" onclick="prosesBayar()" disabled class="w-full bg-slate-300 text-white font-black p-5 rounded-3xl shadow-lg transition-all uppercase tracking-widest cursor-not-allowed">
+            Konfirmasi Pembayaran
+        </button>
+
+    </div>
+
+    <script>
+        const config = { databaseURL: "https://ceklist-anak-indonesia-hebat-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        firebase.initializeApp(config);
+        const db = firebase.database();
+
+        let currentSiswaID = null;
+        let currentSiswaNama = "";
+        let currentSiswaSaldo = 0;
+        let totalBelanja = 0;
+        let namaStan = "";
+
+        function setStan() {
+            namaStan = document.getElementById('pilihStan').value;
+            document.getElementById('infoStan').innerText = "Stan: " + (namaStan || "Belum Dipilih");
+        }
+
+        function addTotal(amt) {
+            totalBelanja += amt;
+            updateUI();
+        }
+
+        function resetTotal() {
+            totalBelanja = 0;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('displayTotal').innerText = "Rp " + totalBelanja.toLocaleString();
+            const btn = document.getElementById('btnBayar');
+            if (currentSiswaID && totalBelanja > 0 && namaStan) {
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-300');
+                btn.classList.add('bg-green-500');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-slate-300');
+            }
+        }
+
+        // LOGIKA SCANNER
+        function onScanSuccess(decodedText, decodedResult) {
+            currentSiswaID = decodedText;
+            // Ambil data siswa dari Firebase
+            db.ref('kantin_users/' + currentSiswaID).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    const d = snapshot.val();
+                    currentSiswaNama = d.nama;
+                    currentSiswaSaldo = d.saldo;
+                    
+                    document.getElementById('scanResult').classList.remove('hidden');
+                    document.getElementById('resNama').innerText = currentSiswaNama;
+                    document.getElementById('resSaldo').innerText = "Saldo: Rp " + currentSiswaSaldo.toLocaleString();
+                    updateUI();
+                } else {
+                    alert("Kartu Tidak Terdaftar!");
+                }
+            });
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+
+        // PROSES POTONG SALDO
+        function prosesBayar() {
+            if (currentSiswaSaldo < totalBelanja) {
+                return alert("Maaf, Saldo Tidak Cukup!");
+            }
+
+            const saldoBaru = currentSiswaSaldo - totalBelanja;
+            const logID = Date.now();
+
+            // 1. Update Saldo Siswa
+            db.ref('kantin_users/' + currentSiswaID).update({
+                saldo: saldoBaru
+            });
+
+            // 2. Catat Transaksi untuk Laporan Admin
+            db.ref('kantin_transactions/' + logID).set({
+                siswa_id: currentSiswaID,
+                nama_siswa: currentSiswaNama,
+                nominal: totalBelanja,
+                stan: namaStan,
+                waktu: new Date().toLocaleString()
+            }).then(() => {
+                alert("Pembayaran Berhasil! Sisa Saldo: Rp " + saldoBaru.toLocaleString());
+                location.reload(); // Reset halaman setelah sukses
+            });
+        }
+    </script>
+</body>
+</html>
