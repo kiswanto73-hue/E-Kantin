@@ -10,42 +10,41 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-slate-100 min-h-screen">
-
+<body class="bg-slate-100 min-h-screen pb-20">
     <div class="max-w-md mx-auto p-4">
         <div class="bg-indigo-900 text-white p-6 rounded-[2rem] shadow-xl mb-6 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-black italic italic">KASIR KANTIN 🛒</h1>
-                <p id="namaStanTerpilih" class="text-[10px] font-bold text-indigo-300 uppercase">Pilih Stan Anda</p>
+                <h1 class="text-xl font-black italic">KASIR KANTIN 🛒</h1>
+                <p id="namaStanTerpilih" class="text-[10px] font-bold text-indigo-300 uppercase italic">Pilih Stan Anda</p>
             </div>
-            <a href="dashboard-kantin.html" class="text-xs bg-indigo-800 p-2 rounded-xl">Menu</a>
+            <a href="dashboard-kantin.html" class="text-xs bg-indigo-800 p-2 rounded-xl border border-indigo-400">MENU</a>
         </div>
 
-        <select id="selectStan" onchange="loadMenuStan()" class="w-full p-4 rounded-2xl mb-4 bg-white shadow-sm font-bold border-2 border-indigo-100 outline-none">
+        <select id="selectStan" onchange="loadMenuStan()" class="w-full p-4 rounded-2xl mb-4 bg-white shadow-sm font-bold border-2 border-indigo-100 outline-none focus:border-indigo-500">
             <option value="">-- PILIH UNIT STAN --</option>
             <option value="STAN MAKANAN">STAN MAKANAN</option>
             <option value="STAN MINUMAN">STAN MINUMAN</option>
             <option value="STAN SNACK">STAN SNACK</option>
         </select>
 
-        <div id="menuContainer" class="grid grid-cols-2 gap-3 mb-6">
-            </div>
+        <div id="menuContainer" class="grid grid-cols-2 gap-3 mb-6"></div>
 
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm mb-6">
-            <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">Total Tagihan</h3>
-            <div id="totalTagihan" class="text-3xl font-black text-indigo-900 mb-4">Rp 0</div>
-            <button onclick="bukaScanner()" id="btnBayar" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all hidden">
-                SCAN KARTU & BAYAR 💳
-            </button>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm sticky bottom-4 border-2 border-indigo-50">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase mb-1">Total Tagihan:</h3>
+            <div id="totalTagihan" class="text-3xl font-black text-indigo-900 mb-2">Rp 0</div>
+            <p id="listBelanja" class="text-[10px] text-slate-400 italic mb-4 truncate">Belum ada item</p>
+            <div class="flex gap-2">
+                <button onclick="resetKeranjang()" class="bg-red-100 text-red-600 p-4 rounded-2xl font-bold text-xs">RESET</button>
+                <button onclick="bukaScanner()" id="btnBayar" class="flex-1 bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg hidden uppercase tracking-wider text-sm">PROSES BAYAR 💳</button>
+            </div>
         </div>
     </div>
 
-    <div id="modalScanner" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col items-center justify-center p-6 text-white">
+    <div id="modalScanner" class="fixed inset-0 bg-black bg-opacity-95 z-50 hidden flex flex-col items-center justify-center p-6 text-white">
         <div class="w-full max-w-sm bg-white rounded-[2rem] overflow-hidden p-4">
-            <div id="reader" style="width: 100%;"></div>
-            <button onclick="tutupScanner()" class="w-full mt-4 bg-red-500 text-white font-bold p-3 rounded-xl text-sm">BATAL</button>
+            <div id="reader"></div>
+            <button onclick="tutupScanner()" class="w-full mt-4 bg-red-500 text-white font-bold p-3 rounded-xl">BATAL</button>
         </div>
-        <p class="mt-4 text-center text-xs animate-pulse">Arahkan Kamera ke Barcode/QR Kartu Siswa</p>
     </div>
 
     <script>
@@ -62,95 +61,82 @@
         const db = firebase.database();
 
         let keranjang = 0;
+        let itemTerpilih = [];
         let html5QrCode;
 
-        // 1. Load Menu sesuai Stan
         function loadMenuStan() {
             const stan = document.getElementById('selectStan').value;
             const container = document.getElementById('menuContainer');
             document.getElementById('namaStanTerpilih').innerText = stan || "Pilih Stan Anda";
-            container.innerHTML = "";
-            keranjang = 0;
-            updateTotal();
+            resetKeranjang();
 
             if(!stan) return;
-
             db.ref('kantin_menus/' + stan).on('value', snapshot => {
                 container.innerHTML = "";
                 snapshot.forEach(child => {
                     const menu = child.val();
                     container.innerHTML += `
-                        <button onclick="tambahItem(${menu.harga})" class="bg-white p-4 rounded-2xl shadow-sm border-2 border-transparent active:border-indigo-500 text-left">
+                        <button onclick="tambahItem('${menu.nama}', ${menu.harga})" class="bg-white p-4 rounded-2xl shadow-sm border-2 border-transparent active:scale-95 transition-all text-left">
                             <p class="text-[10px] font-black text-indigo-500 uppercase">${menu.nama}</p>
                             <p class="font-bold text-slate-700 text-sm">Rp ${menu.harga.toLocaleString()}</p>
-                        </button>
-                    `;
+                        </button>`;
                 });
             });
         }
 
-        function tambahItem(harga) {
+        function tambahItem(nama, harga) {
             keranjang += harga;
+            itemTerpilih.push(nama);
             updateTotal();
         }
 
         function updateTotal() {
             document.getElementById('totalTagihan').innerText = "Rp " + keranjang.toLocaleString();
+            document.getElementById('listBelanja').innerText = itemTerpilih.join(", ") || "Belum ada item";
             document.getElementById('btnBayar').style.display = keranjang > 0 ? "block" : "none";
         }
 
-        // 2. Fungsi Scanner
+        function resetKeranjang() {
+            keranjang = 0;
+            itemTerpilih = [];
+            updateTotal();
+        }
+
         function bukaScanner() {
             document.getElementById('modalScanner').classList.remove('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-
-            // Mulai Kamera Belakang
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
         }
 
         function onScanSuccess(decodedText) {
             tutupScanner();
-            prosesBayar(decodedText);
+            const idSiswa = decodedText.trim();
+            const stan = document.getElementById('selectStan').value;
+
+            db.ref('kantin_users/' + idSiswa).once('value', snapshot => {
+                const user = snapshot.val();
+                if(!user) return alert("❌ Siswa tidak terdaftar!");
+                if(user.saldo < keranjang) return alert("❌ Saldo Kurang!");
+
+                const saldoBaru = user.saldo - keranjang;
+                db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
+                db.ref('kantin_laporan').push({
+                    idSiswa: idSiswa,
+                    namaSiswa: user.nama,
+                    stan: stan,
+                    item: itemTerpilih.join(", "),
+                    total: keranjang,
+                    waktu: new Date().toLocaleString('id-ID')
+                });
+
+                alert("✅ BERHASIL!\nSiswa: " + user.nama + "\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
+                resetKeranjang();
+            });
         }
 
         function tutupScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('modalScanner').classList.add('hidden');
-                });
-            } else {
-                document.getElementById('modalScanner').classList.add('hidden');
-            }
-        }
-
-        // 3. Logika Pembayaran
-        function prosesBayar(idSiswa) {
-            const stan = document.getElementById('selectStan').value;
-            db.ref('kantin_users/' + idSiswa).once('value', snapshot => {
-                const user = snapshot.val();
-                if(!user) return alert("❌ Siswa Tidak Ditemukan!");
-
-                if(user.saldo < keranjang) {
-                    alert("❌ Saldo Kurang! Sisa: Rp " + user.saldo.toLocaleString());
-                } else {
-                    const saldoBaru = user.saldo - keranjang;
-                    // Update Saldo Siswa
-                    db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
-                    
-                    // Catat Laporan
-                    db.ref('kantin_laporan').push({
-                        nama: user.nama,
-                        stan: stan,
-                        total: keranjang,
-                        waktu: new Date().toLocaleString('id-ID')
-                    });
-
-                    alert("✅ PEMBAYARAN BERHASIL!\nNama: " + user.nama + "\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
-                    keranjang = 0;
-                    updateTotal();
-                }
-            });
+            if(html5QrCode) html5QrCode.stop();
+            document.getElementById('modalScanner').classList.add('hidden');
         }
     </script>
 </body>
