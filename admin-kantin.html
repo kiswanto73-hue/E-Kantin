@@ -3,152 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin E-Kantin - Manajemen Saldo</title>
+    <title>Admin - Pendaftaran & Top Up</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-</head>
-<body class="bg-slate-100 min-h-screen font-sans">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    
+    <style>
+        /* STRATEGI CETAK KARTU */
+        @media print {
+            /* Sembunyikan SEMUA elemen kecuali area kartu */
+            body * { visibility: hidden; background: none !important; }
+            #areaCetak, #areaCetak * { visibility: visible; }
+            #areaCetak {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: flex !important;
+                justify-content: center;
+            }
+            .no-print { display: none !important; }
+        }
 
-    <div class="flex flex-col md:flex-row">
-        <div class="w-full md:w-64 bg-indigo-900 text-white p-6 shadow-xl">
-            <h1 class="text-2xl font-black italic border-b-2 border-yellow-400 pb-4">E-KANTIN ADMIN</h1>
-            <nav class="mt-8 space-y-4">
-                <div class="bg-indigo-700 p-3 rounded-xl font-bold">📊 Dashboard Utama</div>
-                <div class="p-3 opacity-50">🍔 Menu Pedagang (Soon)</div>
-                <div class="p-3 opacity-50">📈 Laporan Penjualan</div>
-            </nav>
+        /* Desain Kartu di Layar */
+        .kartu-siswa {
+            width: 85mm;
+            height: 54mm;
+            border: 2px solid #1e1b4b;
+            border-radius: 15px;
+            padding: 15px;
+            background: white;
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4">
+
+    <div class="max-w-4xl mx-auto no-print">
+        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+            <a href="dashboard-kantin.html" class="text-indigo-600 font-bold flex items-center gap-2">
+                ⬅️ Kembali ke Dashboard
+            </a>
+            <h1 class="font-black text-slate-800 uppercase tracking-tighter">Manajemen Siswa</h1>
         </div>
 
-        <div class="flex-1 p-4 md:p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-t-8 border-indigo-600">
-                    <h2 class="text-xl font-black text-indigo-900 mb-6 uppercase">Pendaftaran & Top Up 💰</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400">NOMOR KARTU (ID)</label>
-                            <input type="text" id="stuID" placeholder="Scan Barcode / Ketik ID" class="w-full bg-slate-50 p-4 rounded-xl border focus:border-indigo-500 outline-none font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400">NAMA SISWA</label>
-                            <input type="text" id="stuName" placeholder="Nama Lengkap" class="w-full bg-slate-50 p-4 rounded-xl border focus:border-indigo-500 outline-none font-bold">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400">JUMLAH DEPOSIT (RP)</label>
-                            <input type="number" id="stuDeposit" placeholder="Contoh: 50000" class="w-full bg-slate-50 p-4 rounded-xl border border-green-200 focus:border-green-500 outline-none font-black text-green-600">
-                        </div>
-                        <button onclick="saveStudent()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-xl hover:bg-indigo-700 transition-all shadow-lg uppercase tracking-widest">Simpan & Update Saldo</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border-2 border-indigo-50">
+                <h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Registrasi & Top Up</h2>
+                <div class="space-y-3">
+                    <input type="text" id="idSiswa" placeholder="ID Kartu (Scan/Ketik)" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    <input type="text" id="namaSiswa" placeholder="Nama Lengkap Siswa" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    <input type="number" id="saldoSiswa" placeholder="Nominal Saldo/Top Up" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="simpanData()" class="bg-indigo-600 text-white font-black p-4 rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs">SIMPAN/UPDATE</button>
+                        <button onclick="buatBarcode()" class="bg-emerald-500 text-white font-black p-4 rounded-xl shadow-lg hover:bg-emerald-600 transition-all text-xs">PRATINJAU KARTU</button>
                     </div>
                 </div>
+            </div>
 
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
-                    <h2 class="text-[10px] font-black text-slate-400 mb-4 uppercase">Preview Kartu Debit Siswa</h2>
-                    <div id="cardPreview" class="w-full max-w-sm bg-gradient-to-br from-indigo-800 to-indigo-900 p-6 rounded-2xl text-white shadow-2xl">
-                        <div class="flex justify-between items-start mb-8">
-                            <div>
-                                <p class="text-[8px] opacity-60">E-KANTIN DEBIT CARD</p>
-                                <p id="prevName" class="text-lg font-black italic uppercase tracking-tighter">NAMA SISWA</p>
-                            </div>
-                            <div class="text-yellow-400 font-black">QR</div>
+            <div class="bg-slate-200 p-6 rounded-[2rem] flex items-center justify-center border-4 border-dashed border-slate-300">
+                <div id="areaCetak" class="hidden">
+                    <div class="kartu-siswa flex flex-col items-center justify-between text-center">
+                        <div>
+                            <h3 class="text-[10px] font-black text-indigo-900 leading-none uppercase">Kartu Digital Kantin</h3>
+                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">SMP/SMA NEGERI CONTOH</p>
                         </div>
-                        <div class="bg-white p-2 rounded-lg flex justify-center">
-                            <svg id="barcode"></svg>
+                        
+                        <svg id="barcodeOutput"></svg>
+                        
+                        <div>
+                            <h2 id="viewNama" class="text-sm font-black text-slate-800 uppercase">-</h2>
+                            <p id="viewID" class="text-[9px] font-bold text-indigo-600 tracking-widest">-</p>
                         </div>
                     </div>
-                    <button onclick="window.print()" class="mt-4 text-xs font-bold text-indigo-500 hover:underline">Cetak Kartu (Print)</button>
                 </div>
-
+                <div id="placeholderText" class="text-slate-400 font-bold text-xs uppercase italic text-center">
+                    Klik "Pratinjau Kartu" <br> untuk melihat tampilan
+                </div>
             </div>
+        </div>
 
-            <div class="mt-8 bg-white rounded-[2rem] shadow-sm overflow-hidden border">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b">
-                        <tr class="text-[10px] font-black text-indigo-900 uppercase">
-                            <th class="p-4">ID Kartu</th>
-                            <th class="p-4">Nama Siswa</th>
-                            <th class="p-4">Saldo Saat Ini</th>
-                            <th class="p-4 text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="studentTable" class="divide-y divide-slate-100">
-                        </tbody>
-                </table>
-            </div>
+        <div id="btnCetakArea" class="hidden mt-6 text-center">
+            <button onclick="window.print()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black shadow-2xl hover:scale-105 transition-all">
+                🖨️ CETAK KARTU SEKARANG
+            </button>
         </div>
     </div>
 
     <script>
-        // CONFIG FIREBASE (Gunakan DB yang sama agar realtime)
-        const config = { databaseURL: "https://ceklist-anak-indonesia-hebat-default-rtdb.asia-southeast1.firebasedatabase.app" };
-        firebase.initializeApp(config);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Update Barcode Preview Realtime
-        document.getElementById('stuID').addEventListener('input', function(e) {
-            if(e.target.value) {
-                JsBarcode("#barcode", e.target.value, { format: "CODE128", height: 40, displayValue: false });
-            }
-        });
-        document.getElementById('stuName').addEventListener('input', function(e) {
-            document.getElementById('prevName').innerText = e.target.value || "NAMA SISWA";
+        // CEK LOGIN
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) window.location.href = "index.html";
         });
 
-        // SIMPAN DATA KE FIREBASE
-        function saveStudent() {
-            const id = document.getElementById('stuID').value;
-            const nama = document.getElementById('stuName').value;
-            const deposit = parseInt(document.getElementById('stuDeposit').value) || 0;
+        function simpanData() {
+            const id = document.getElementById('idSiswa').value;
+            const nama = document.getElementById('namaSiswa').value;
+            const saldo = parseInt(document.getElementById('saldoSiswa').value);
 
-            if(!id || !nama) return alert("Lengkapi Data!");
+            if(!id || !nama) return alert("Lengkapi data!");
 
-            // Cek saldo lama dulu
-            db.ref('kantin_users/' + id).once('value').then((snapshot) => {
-                let saldoLama = 0;
-                if(snapshot.exists()) {
-                    saldoLama = snapshot.val().saldo;
-                }
-
-                const saldoBaru = saldoLama + deposit;
-
-                db.ref('kantin_users/' + id).set({
-                    nama: nama,
-                    saldo: saldoBaru,
-                    last_update: new Date().toLocaleString()
-                }).then(() => {
-                    alert("Berhasil Update Saldo!");
-                    document.getElementById('stuID').value = "";
-                    document.getElementById('stuName').value = "";
-                    document.getElementById('stuDeposit').value = "";
-                });
+            db.ref('kantin_users/' + id).set({
+                nama: nama,
+                saldo: saldo
+            }).then(() => {
+                alert("Data Berhasil Disimpan!");
             });
         }
 
-        // TAMPILKAN TABEL REALTIME
-        db.ref('kantin_users').on('value', (snapshot) => {
-            const table = document.getElementById('studentTable');
-            table.innerHTML = "";
-            snapshot.forEach((child) => {
-                const d = child.val();
-                table.innerHTML += `
-                    <tr class="hover:bg-slate-50 font-bold text-sm">
-                        <td class="p-4 font-mono text-xs text-indigo-500">${child.key}</td>
-                        <td class="p-4 uppercase">${d.nama}</td>
-                        <td class="p-4 text-green-600">Rp ${d.saldo.toLocaleString()}</td>
-                        <td class="p-4 text-center">
-                            <button onclick="editStu('${child.key}', '${d.nama}')" class="text-[10px] bg-slate-100 px-3 py-1 rounded-md">Pilih</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        });
+        function buatBarcode() {
+            const id = document.getElementById('idSiswa').value;
+            const nama = document.getElementById('namaSiswa').value;
 
-        function editStu(id, nama) {
-            document.getElementById('stuID').value = id;
-            document.getElementById('stuName').value = nama;
-            JsBarcode("#barcode", id, { format: "CODE128", height: 40, displayValue: false });
-            document.getElementById('prevName').innerText = nama;
+            if(!id || !nama) return alert("Input Nama & ID dulu Pak!");
+
+            document.getElementById('areaCetak').classList.remove('hidden');
+            document.getElementById('btnCetakArea').classList.remove('hidden');
+            document.getElementById('placeholderText').classList.add('hidden');
+            
+            document.getElementById('viewNama').innerText = nama;
+            document.getElementById('viewID').innerText = id;
+
+            JsBarcode("#barcodeOutput", id, {
+                format: "CODE128",
+                width: 2,
+                height: 50,
+                displayValue: false
+            });
         }
     </script>
 </body>
