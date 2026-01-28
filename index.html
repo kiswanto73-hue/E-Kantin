@@ -34,4 +34,63 @@
                 </div>
                 
                 <div>
-                    <label class="text-
+                    <label class="text-[10px] font-black text-slate-400 ml-4 mb-1 block uppercase">Kata Sandi</label>
+                    <input type="password" id="password" placeholder="••••••••" 
+                        class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 focus:bg-white transition-all font-bold text-slate-700">
+                </div>
+                
+                <button onclick="login()" class="w-full bg-indigo-600 text-white font-extrabold p-5 rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all uppercase tracking-widest text-sm mt-4">
+                    Masuk Sekarang 🚀
+                </button>
+            </div>
+            
+            <p id="msg" class="text-center text-red-500 text-[10px] font-bold mt-6 h-4 uppercase"></p>
+        </div>
+    </div>
+
+    <script>
+        // KONFIGURASI ASLI MILIK BAPAK
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+
+        // Inisialisasi
+        firebase.initializeApp(firebaseConfig);
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+
+            if(!email || !pass) {
+                msg.innerText = "⚠️ Mohon isi semua bidang!";
+                return;
+            }
+
+            msg.className = "text-center text-indigo-500 text-[10px] font-bold mt-6 h-4 uppercase animate-pulse";
+            msg.innerText = "⏳ Memverifikasi Identitas...";
+
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+            .then((userCredential) => {
+                msg.innerText = "✅ Berhasil! Mengalihkan...";
+                setTimeout(() => {
+                    window.location.href = "dashboard-kantin.html";
+                }, 1000);
+            })
+            .catch((error) => {
+                msg.className = "text-center text-red-500 text-[10px] font-bold mt-6 h-4 uppercase";
+                if(error.code === 'auth/wrong-password') msg.innerText = "❌ Password salah!";
+                else if(error.code === 'auth/user-not-found') msg.innerText = "❌ Email tidak terdaftar!";
+                else msg.innerText = "❌ Akses Ditolak!";
+                console.error(error);
+            });
+        }
+    </script>
+</body>
+</html>
