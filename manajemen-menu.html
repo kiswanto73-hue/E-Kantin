@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Menu Kantin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-indigo-900 p-8 rounded-[2.5rem] shadow-xl mb-8 text-white relative overflow-hidden">
+            <div class="relative z-10">
+                <h1 class="text-2xl font-black italic tracking-tighter">PENGATURAN MENU 🍔</h1>
+                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Update daftar harga & makanan</p>
+            </div>
+            <div class="absolute -right-4 -bottom-4 text-7xl opacity-20 rotate-12">🥘</div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm mb-8 border-2 border-indigo-50">
+            <h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Tambah Menu Baru</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-500 ml-2">PILIH STAN</label>
+                    <select id="inputStan" class="w-full bg-slate-100 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-500 font-bold text-sm">
+                        <option value="STAN MAKANAN">STAN MAKANAN</option>
+                        <option value="STAN MINUMAN">STAN MINUMAN</option>
+                        <option value="STAN SNACK">STAN SNACK</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-500 ml-2">NAMA MENU</label>
+                        <input type="text" id="inputNama" placeholder="Misal: Nasi Uduk" class="w-full bg-slate-100 p-4 rounded-2xl outline-none font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-500 ml-2">HARGA (RP)</label>
+                        <input type="number" id="inputHarga" placeholder="5000" class="w-full bg-slate-100 p-4 rounded-2xl outline-none font-bold text-sm">
+                    </div>
+                </div>
+                <button onclick="tambahMenu()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase text-xs italic">
+                    Simpan Menu Ke Database 📥
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden border">
+            <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-black text-indigo-900 text-[10px] uppercase">Daftar Menu Saat Ini</h3>
+                <span class="text-[8px] bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full font-bold">REALTIME</span>
+            </div>
+            <div id="listMenuAll" class="divide-y divide-slate-100">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // Gunakan Config Firebase Bapak yang tadi
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 1. Fungsi Tambah Menu
+        function tambahMenu() {
+            const stan = document.getElementById('inputStan').value;
+            const nama = document.getElementById('inputNama').value;
+            const harga = parseInt(document.getElementById('inputHarga').value);
+
+            if(!nama || !harga) return alert("Isi nama dan harga!");
+
+            db.ref('kantin_menus/' + stan).push({
+                nama: nama,
+                harga: harga
+            }).then(() => {
+                document.getElementById('inputNama').value = "";
+                document.getElementById('inputHarga').value = "";
+                alert("Menu Berhasil Ditambahkan!");
+            });
+        }
+
+        // 2. Fungsi Tampilkan & Hapus Menu
+        db.ref('kantin_menus').on('value', snapshot => {
+            const container = document.getElementById('listMenuAll');
+            container.innerHTML = "";
+            
+            snapshot.forEach(stanSnapshot => {
+                const namaStan = stanSnapshot.key;
+                stanSnapshot.forEach(menuSnapshot => {
+                    const menu = menuSnapshot.val();
+                    const menuKey = menuSnapshot.key;
+                    
+                    container.innerHTML += `
+                        <div class="p-4 flex justify-between items-center hover:bg-slate-50 transition-all">
+                            <div>
+                                <p class="text-[8px] font-black text-indigo-500 uppercase">${namaStan}</p>
+                                <h4 class="font-bold text-slate-700 text-sm">${menu.nama}</h4>
+                                <p class="text-xs font-black text-slate-400 tracking-tighter text-green-600">Rp ${menu.harga.toLocaleString()}</p>
+                            </div>
+                            <button onclick="hapusMenu('${namaStan}', '${menuKey}')" class="bg-red-50 text-red-500 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+        });
+
+        function hapusMenu(stan, key) {
+            if(confirm("Hapus menu ini?")) {
+                db.ref('kantin_menus/' + stan + '/' + key).remove();
+            }
+        }
+    </script>
+</body>
+</html>
