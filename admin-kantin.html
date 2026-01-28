@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Pendaftaran & Top Up</title>
+    <title>Admin - Pendaftaran & Cetak</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -11,88 +11,92 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     
     <style>
-        /* STRATEGI CETAK KARTU */
-        @media print {
-            /* Sembunyikan SEMUA elemen kecuali area kartu */
-            body * { visibility: hidden; background: none !important; }
-            #areaCetak, #areaCetak * { visibility: visible; }
-            #areaCetak {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                display: flex !important;
-                justify-content: center;
-            }
-            .no-print { display: none !important; }
-        }
-
-        /* Desain Kartu di Layar */
+        /* Desain Kartu untuk Layar */
         .kartu-siswa {
             width: 85mm;
             height: 54mm;
             border: 2px solid #1e1b4b;
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 15px;
             background: white;
-            position: relative;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* STRATEGI CETAK TOTAL: Sembunyikan semua kecuali area kartu */
+        @media print {
+            /* Sembunyikan seluruh body asli */
+            body * { display: none !important; }
+            
+            /* Tampilkan hanya area khusus cetak */
+            #printArea, #printArea * { 
+                display: flex !important; 
+                visibility: visible !important;
+            }
+
+            #printArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                justify-content: center;
+                align-items: flex-start;
+                padding-top: 20px;
+            }
+
+            /* Hilangkan margin default browser */
+            @page { margin: 0; }
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen p-4">
 
-    <div class="max-w-4xl mx-auto no-print">
+    <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
-            <a href="dashboard-kantin.html" class="text-indigo-600 font-bold flex items-center gap-2">
-                ⬅️ Kembali ke Dashboard
-            </a>
-            <h1 class="font-black text-slate-800 uppercase tracking-tighter">Manajemen Siswa</h1>
+            <a href="dashboard-kantin.html" class="text-indigo-600 font-bold text-sm">⬅️ DASHBOARD</a>
+            <h1 class="font-black text-slate-800 uppercase text-xs">REGISTRASI SISWA</h1>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border-2 border-indigo-50">
-                <h2 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Registrasi & Top Up</h2>
                 <div class="space-y-3">
-                    <input type="text" id="idSiswa" placeholder="ID Kartu (Scan/Ketik)" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
-                    <input type="text" id="namaSiswa" placeholder="Nama Lengkap Siswa" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
-                    <input type="number" id="saldoSiswa" placeholder="Nominal Saldo/Top Up" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    <input type="text" id="idSiswa" placeholder="ID Kartu (Scan)" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    <input type="text" id="namaSiswa" placeholder="Nama Siswa" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
+                    <input type="number" id="saldoSiswa" placeholder="Saldo Awal" class="w-full bg-slate-50 p-3 rounded-xl border font-bold">
                     
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="simpanData()" class="bg-indigo-600 text-white font-black p-4 rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs">SIMPAN/UPDATE</button>
-                        <button onclick="buatBarcode()" class="bg-emerald-500 text-white font-black p-4 rounded-xl shadow-lg hover:bg-emerald-600 transition-all text-xs">PRATINJAU KARTU</button>
-                    </div>
+                    <button onclick="simpanData()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs">SIMPAN DATA</button>
+                    <button onclick="buatBarcode()" class="w-full bg-emerald-500 text-white font-black p-4 rounded-xl shadow-lg hover:bg-emerald-600 transition-all text-xs">LIHAT PREVIEW KARTU</button>
                 </div>
             </div>
 
             <div class="bg-slate-200 p-6 rounded-[2rem] flex items-center justify-center border-4 border-dashed border-slate-300">
-                <div id="areaCetak" class="hidden">
-                    <div class="kartu-siswa flex flex-col items-center justify-between text-center">
-                        <div>
-                            <h3 class="text-[10px] font-black text-indigo-900 leading-none uppercase">Kartu Digital Kantin</h3>
-                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">SMP/SMA NEGERI CONTOH</p>
-                        </div>
-                        
-                        <svg id="barcodeOutput"></svg>
-                        
-                        <div>
-                            <h2 id="viewNama" class="text-sm font-black text-slate-800 uppercase">-</h2>
-                            <p id="viewID" class="text-[9px] font-bold text-indigo-600 tracking-widest">-</p>
-                        </div>
+                <div id="previewCard" class="hidden kartu-siswa">
+                    <div>
+                        <h3 class="text-[10px] font-black text-indigo-900 leading-none">E-KANTIN DIGITAL</h3>
+                        <p class="text-[7px] text-slate-400 font-bold uppercase mt-1">Sistem Pembayaran Sekolah</p>
                     </div>
-                </div>
-                <div id="placeholderText" class="text-slate-400 font-bold text-xs uppercase italic text-center">
-                    Klik "Pratinjau Kartu" <br> untuk melihat tampilan
+                    <svg id="barcodeOutput"></svg>
+                    <div>
+                        <h2 id="viewNama" class="text-sm font-black text-slate-800 uppercase">-</h2>
+                        <p id="viewID" class="text-[9px] font-bold text-indigo-600 tracking-widest">-</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="btnCetakArea" class="hidden mt-6 text-center">
-            <button onclick="window.print()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black shadow-2xl hover:scale-105 transition-all">
+            <button onclick="eksekusiCetak()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black shadow-2xl hover:scale-105 transition-all">
                 🖨️ CETAK KARTU SEKARANG
             </button>
         </div>
     </div>
+
+    <div id="printArea" class="hidden"></div>
 
     <script>
         const firebaseConfig = {
@@ -107,45 +111,36 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // CEK LOGIN
-        firebase.auth().onAuthStateChanged(user => {
-            if (!user) window.location.href = "index.html";
-        });
-
         function simpanData() {
             const id = document.getElementById('idSiswa').value;
             const nama = document.getElementById('namaSiswa').value;
             const saldo = parseInt(document.getElementById('saldoSiswa').value);
-
-            if(!id || !nama) return alert("Lengkapi data!");
-
-            db.ref('kantin_users/' + id).set({
-                nama: nama,
-                saldo: saldo
-            }).then(() => {
-                alert("Data Berhasil Disimpan!");
-            });
+            if(!id || !nama) return alert("Isi data!");
+            db.ref('kantin_users/' + id).set({ nama: nama, saldo: saldo }).then(() => alert("Tersimpan!"));
         }
 
         function buatBarcode() {
             const id = document.getElementById('idSiswa').value;
             const nama = document.getElementById('namaSiswa').value;
+            if(!id) return alert("ID Kosong!");
 
-            if(!id || !nama) return alert("Input Nama & ID dulu Pak!");
-
-            document.getElementById('areaCetak').classList.remove('hidden');
+            document.getElementById('previewCard').classList.remove('hidden');
             document.getElementById('btnCetakArea').classList.remove('hidden');
-            document.getElementById('placeholderText').classList.add('hidden');
             
             document.getElementById('viewNama').innerText = nama;
             document.getElementById('viewID').innerText = id;
 
-            JsBarcode("#barcodeOutput", id, {
-                format: "CODE128",
-                width: 2,
-                height: 50,
-                displayValue: false
-            });
+            JsBarcode("#barcodeOutput", id, { format: "CODE128", width: 2, height: 40, displayValue: false });
+        }
+
+        function eksekusiCetak() {
+            // Copy isi kartu preview ke print area
+            const isiKartu = document.getElementById('previewCard').innerHTML;
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `<div class="kartu-siswa">${isiKartu}</div>`;
+            
+            // Jalankan perintah print
+            window.print();
         }
     </script>
 </body>
