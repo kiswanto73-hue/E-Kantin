@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login E-Kantin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-indigo-950 min-h-screen flex items-center justify-center p-6 font-sans">
+
+    <div class="bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl border-b-[10px] border-yellow-400">
+        <div class="text-center mb-8">
+            <div class="bg-indigo-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-4xl">🛡️</span>
+            </div>
+            <h1 class="text-3xl font-black text-indigo-900 italic tracking-tighter">E-KANTIN</h1>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 border-t pt-2">Sistem Keamanan Terpadu</p>
+        </div>
+
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Email Admin" class="w-full bg-slate-100 p-4 rounded-2xl outline-none focus:ring-4 ring-indigo-500/20 font-bold text-sm border-2 border-transparent focus:border-indigo-500 transition-all">
+            
+            <input type="password" id="password" placeholder="Password" class="w-full bg-slate-100 p-4 rounded-2xl outline-none focus:ring-4 ring-indigo-500/20 font-bold text-sm border-2 border-transparent focus:border-indigo-500 transition-all">
+            
+            <button onclick="login()" class="w-full bg-indigo-600 text-white font-black p-5 rounded-2xl shadow-xl hover:bg-indigo-700 active:scale-95 transition-all uppercase italic tracking-widest mt-4">
+                Masuk Sistem 🚀
+            </button>
+        </div>
+        
+        <p id="msg" class="text-center text-red-500 text-[10px] font-black mt-6 uppercase leading-relaxed"></p>
+    </div>
+
+    <script>
+        // MASUKKAN API KEY BAPAK DI SINI
+        const config = { 
+            apiKey: "MASUKKAN_API_KEY_BAPAK_DI_SINI",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
+        firebase.initializeApp(config);
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+            msg.innerText = "Mengecek Akses...";
+
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+            .then((userCredential) => {
+                // Berhasil Login, arahkan ke dashboard
+                window.location.href = "dashboard-kantin.html";
+            })
+            .catch((error) => {
+                msg.innerText = "Gagal: " + error.message;
+            });
+        }
+    </script>
+</body>
+</html>
