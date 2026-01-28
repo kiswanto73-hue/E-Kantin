@@ -9,55 +9,70 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans">
+<body class="bg-slate-100 min-h-screen font-sans pb-20">
 
-    <div class="bg-indigo-700 p-6 text-white shadow-lg flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-black italic">KASIR KANTIN 🛒</h1>
-            <p id="infoStan" class="text-[10px] text-yellow-300 font-bold uppercase">Stan: Belum Dipilih</p>
+    <div class="bg-indigo-800 p-6 text-white shadow-xl sticky top-0 z-50">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <div>
+                <h1 class="text-xl font-black italic tracking-tighter">KASIR KANTIN 🛒</h1>
+                <p id="infoStan" class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest">Pilih Stan Anda -></p>
+            </div>
+            <select id="pilihStan" onchange="setStan()" class="bg-indigo-900 text-[10px] p-2 rounded-xl border border-indigo-500 font-bold outline-none">
+                <option value="">PILIH STAN</option>
+                <option value="STAN MAKANAN">STAN MAKANAN</option>
+                <option value="STAN MINUMAN">STAN MINUMAN</option>
+                <option value="KOPERASI">KOPERASI</option>
+            </select>
         </div>
-        <select id="pilihStan" onchange="setStan()" class="bg-indigo-800 text-xs p-2 rounded-lg border border-indigo-500 outline-none">
-            <option value="">Pilih Stan...</option>
-            <option value="Makanan">Stan Makanan</option>
-            <option value="Minuman">Stan Minuman</option>
-            <option value="Snack">Stan Snack</option>
-        </select>
     </div>
 
     <div class="max-w-md mx-auto p-4 space-y-4">
         
-        <div class="bg-white p-4 rounded-3xl shadow-sm overflow-hidden border-2 border-indigo-100">
-            <div id="reader" class="rounded-2xl overflow-hidden"></div>
-            <div id="scanResult" class="mt-4 p-4 bg-slate-100 rounded-2xl text-center hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Siswa Terdeteksi:</p>
-                <h2 id="resNama" class="text-lg font-black text-indigo-900">-</h2>
-                <p id="resSaldo" class="text-green-600 font-bold">Rp 0</p>
+        <div class="bg-white p-4 rounded-[2.5rem] shadow-sm border-2 border-white relative overflow-hidden">
+            <div id="reader" class="rounded-3xl overflow-hidden bg-black"></div>
+            
+            <div id="scanResult" class="mt-4 p-5 bg-indigo-50 rounded-3xl border-2 border-indigo-100 hidden animate-pulse">
+                <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Data Siswa</p>
+                <h2 id="resNama" class="text-xl font-black text-indigo-900 uppercase">...</h2>
+                <div class="flex justify-between items-center mt-2">
+                    <p id="resSaldo" class="text-lg font-bold text-green-600">Rp 0</p>
+                    <span class="text-[8px] bg-white px-2 py-1 rounded-full font-bold shadow-sm">SALDO AKTIF</span>
+                </div>
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-3xl shadow-sm">
-            <h3 class="font-black text-slate-700 mb-4 text-sm uppercase">Pilih Menu & Nominal</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="addTotal(5000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">5K</button>
-                <button onclick="addTotal(10000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">10K</button>
-                <button onclick="addTotal(15000)" class="p-4 bg-slate-100 rounded-2xl font-black text-indigo-700 hover:bg-yellow-400 transition-all">15K</button>
-                <button onclick="resetTotal()" class="p-4 bg-red-50 rounded-2xl font-black text-red-500 italic">Reset</button>
+        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-slate-400 text-[10px] uppercase tracking-widest">Input Belanja</h3>
+                <button onclick="resetTotal()" class="text-[9px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full">RESET</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <button onclick="addTotal(1000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">1K</button>
+                <button onclick="addTotal(2000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">2K</button>
+                <button onclick="addTotal(5000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">5K</button>
+                <button onclick="addTotal(10000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">10K</button>
+                <button onclick="addTotal(15000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">15K</button>
+                <button onclick="addTotal(20000)" class="p-3 bg-slate-50 rounded-2xl font-black text-indigo-700 border border-slate-100 active:scale-95 transition-all">20K</button>
             </div>
             
-            <div class="mt-6 p-4 bg-indigo-900 rounded-2xl text-center">
-                <p class="text-white/60 text-[10px] font-bold">TOTAL TAGIHAN</p>
-                <h1 id="displayTotal" class="text-3xl font-black text-yellow-400">Rp 0</h1>
+            <div class="bg-indigo-900 p-6 rounded-[2rem] text-center shadow-inner">
+                <p class="text-indigo-300 text-[9px] font-black uppercase mb-1">Total Tagihan</p>
+                <h1 id="displayTotal" class="text-4xl font-black text-yellow-400">Rp 0</h1>
             </div>
         </div>
 
-        <button id="btnBayar" onclick="prosesBayar()" disabled class="w-full bg-slate-300 text-white font-black p-5 rounded-3xl shadow-lg transition-all uppercase tracking-widest cursor-not-allowed">
-            Konfirmasi Pembayaran
+        <button id="btnBayar" onclick="prosesBayar()" disabled class="w-full bg-slate-300 text-white font-black p-6 rounded-[2rem] shadow-lg transition-all uppercase italic tracking-tighter disabled:cursor-not-allowed">
+            Konfirmasi Bayar 💸
         </button>
 
     </div>
 
     <script>
-        const config = { databaseURL: "https://ceklist-anak-indonesia-hebat-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        // KONEKSI KE DATABASE BARU BAPAK
+        const config = { 
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
         firebase.initializeApp(config);
         const db = firebase.database();
 
@@ -69,7 +84,8 @@
 
         function setStan() {
             namaStan = document.getElementById('pilihStan').value;
-            document.getElementById('infoStan').innerText = "Stan: " + (namaStan || "Belum Dipilih");
+            document.getElementById('infoStan').innerText = "STAN: " + (namaStan || "BELUM DIPILIH");
+            updateUI();
         }
 
         function addTotal(amt) {
@@ -85,20 +101,20 @@
         function updateUI() {
             document.getElementById('displayTotal').innerText = "Rp " + totalBelanja.toLocaleString();
             const btn = document.getElementById('btnBayar');
-            if (currentSiswaID && totalBelanja > 0 && namaStan) {
+            
+            // Tombol aktif HANYA JIKA: Siswa discan, Nominal diisi, & Stan dipilih
+            if (currentSiswaID && totalBelanja > 0 && namaStan !== "") {
                 btn.disabled = false;
-                btn.classList.remove('bg-slate-300');
-                btn.classList.add('bg-green-500');
+                btn.classList.replace('bg-slate-300', 'bg-green-500');
             } else {
                 btn.disabled = true;
                 btn.classList.add('bg-slate-300');
             }
         }
 
-        // LOGIKA SCANNER
-        function onScanSuccess(decodedText, decodedResult) {
+        // FUNGSI SCANNER
+        function onScanSuccess(decodedText) {
             currentSiswaID = decodedText;
-            // Ambil data siswa dari Firebase
             db.ref('kantin_users/' + currentSiswaID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     const d = snapshot.val();
@@ -107,41 +123,41 @@
                     
                     document.getElementById('scanResult').classList.remove('hidden');
                     document.getElementById('resNama').innerText = currentSiswaNama;
-                    document.getElementById('resSaldo').innerText = "Saldo: Rp " + currentSiswaSaldo.toLocaleString();
+                    document.getElementById('resSaldo').innerText = "Rp " + currentSiswaSaldo.toLocaleString();
                     updateUI();
                 } else {
-                    alert("Kartu Tidak Terdaftar!");
+                    alert("⚠️ KARTU TIDAK TERDAFTAR!");
                 }
             });
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
         html5QrcodeScanner.render(onScanSuccess);
 
-        // PROSES POTONG SALDO
+        // LOGIKA TRANSAKSI
         function prosesBayar() {
             if (currentSiswaSaldo < totalBelanja) {
-                return alert("Maaf, Saldo Tidak Cukup!");
+                return alert("❌ SALDO TIDAK CUKUP!");
             }
 
             const saldoBaru = currentSiswaSaldo - totalBelanja;
             const logID = Date.now();
 
-            // 1. Update Saldo Siswa
+            // 1. Kurangi Saldo Siswa
             db.ref('kantin_users/' + currentSiswaID).update({
                 saldo: saldoBaru
             });
 
-            // 2. Catat Transaksi untuk Laporan Admin
+            // 2. Simpan Riwayat Penjualan
             db.ref('kantin_transactions/' + logID).set({
                 siswa_id: currentSiswaID,
                 nama_siswa: currentSiswaNama,
                 nominal: totalBelanja,
                 stan: namaStan,
-                waktu: new Date().toLocaleString()
+                waktu: new Date().toLocaleString('id-ID')
             }).then(() => {
-                alert("Pembayaran Berhasil! Sisa Saldo: Rp " + saldoBaru.toLocaleString());
-                location.reload(); // Reset halaman setelah sukses
+                alert("✅ TRANSAKSI BERHASIL!\nSisa Saldo " + currentSiswaNama + ": Rp " + saldoBaru.toLocaleString());
+                location.reload(); // Refresh untuk transaksi berikutnya
             });
         }
     </script>
