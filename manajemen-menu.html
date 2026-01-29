@@ -3,41 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Menu - Langsung Edit</title>
+    <title>Update Menu Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 min-h-screen p-4">
-
-    <div class="max-w-2xl mx-auto">
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm mb-6 flex justify-between items-center border-b-4 border-indigo-500">
-            <div>
-                <h1 class="text-xl font-black text-indigo-900 italic">KELOLA MENU 🍕</h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Input & Hapus Daftar Makanan</p>
-            </div>
-            <a href="dashboard-kantin.html" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Dashboard</a>
+<body class="bg-slate-100 p-4">
+    <div class="max-w-lg mx-auto">
+        <div class="bg-indigo-900 text-white p-6 rounded-[2rem] shadow-lg mb-6 flex justify-between items-center">
+            <h1 class="font-black italic">UPDATE MENU 🥗</h1>
+            <a href="dashboard-kantin.html" class="text-[10px] bg-white/20 px-3 py-2 rounded-xl font-bold">KEMBALI</a>
         </div>
 
-        <div class="bg-white p-6 rounded-[2rem] shadow-md mb-8">
-            <div class="grid grid-cols-1 gap-3">
-                <select id="selectStan" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs border-2 border-transparent focus:border-indigo-500 outline-none">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm mb-6">
+            <div class="space-y-3">
+                <select id="stan" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs border-none outline-none focus:ring-2 ring-indigo-500">
                     <option value="STAN MAKANAN">STAN MAKANAN</option>
                     <option value="STAN MINUMAN">STAN MINUMAN</option>
                     <option value="STAN SNACK">STAN SNACK</option>
                 </select>
-                <input type="text" id="namaMenu" placeholder="Nama Menu (Contoh: Bakso Bakar)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
-                <input type="number" id="hargaMenu" placeholder="Harga (Contoh: 5000)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
-                <button onclick="simpanMenu()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-all uppercase tracking-widest text-xs">Tambah ke Daftar +</button>
+                <input type="text" id="nama" placeholder="Nama Makanan" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs border-none outline-none">
+                <input type="number" id="harga" placeholder="Harga (Misal: 5000)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs border-none outline-none">
+                <button onclick="save()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-indigo-200 shadow-lg uppercase text-xs">Simpan Menu Baru</button>
             </div>
         </div>
 
-        <div id="listMenuContainer" class="space-y-6">
-            </div>
+        <div id="list" class="space-y-4"></div>
     </div>
 
     <script>
-        // Konfigurasi Firebase Bapak
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -50,73 +44,32 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. Fungsi Simpan Menu
-        function simpanMenu() {
-            const stan = document.getElementById('selectStan').value;
-            const nama = document.getElementById('namaMenu').value.trim();
-            const harga = parseInt(document.getElementById('hargaMenu').value);
-
-            if(nama && harga) {
-                // Simpan dengan ID nama menu agar tidak double
-                const menuId = nama.replace(/\s+/g, '_').toUpperCase();
-                db.ref('kantin_menus/' + stan + '/' + menuId).set({
-                    nama: nama.toUpperCase(),
-                    harga: harga
-                }).then(() => {
-                    document.getElementById('namaMenu').value = "";
-                    document.getElementById('hargaMenu').value = "";
-                    alert("✅ Menu " + nama + " Berhasil Ditambahkan!");
-                });
-            } else {
-                alert("Isi Nama & Harga!");
+        function save() {
+            const s = document.getElementById('stan').value;
+            const n = document.getElementById('nama').value.toUpperCase();
+            const h = parseInt(document.getElementById('harga').value);
+            if(n && h) {
+                db.ref('kantin_menus/'+s+'/'+n.replace(/ /g,'_')).set({nama:n, harga:h})
+                .then(()=>{ alert("Menu tersimpan!"); document.getElementById('nama').value=""; document.getElementById('harga').value=""; });
             }
         }
 
-        // 2. Tampilkan Menu (Real-time)
-        db.ref('kantin_menus').on('value', snapshot => {
-            const container = document.getElementById('listMenuContainer');
-            container.innerHTML = "";
-            
-            if(!snapshot.exists()) {
-                container.innerHTML = "<p class='text-center text-slate-400 italic text-xs'>Belum ada menu. Silakan tambah di atas.</p>";
-                return;
-            }
-
-            snapshot.forEach(stanSnap => {
-                const namaStan = stanSnap.key;
-                let html = `
-                    <div class="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100">
-                        <div class="bg-indigo-50 px-6 py-3 border-b border-indigo-100">
-                            <h3 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">${namaStan}</h3>
-                        </div>
-                        <div class="divide-y divide-slate-50">
-                `;
-
-                stanSnap.forEach(menuSnap => {
-                    const menu = menuSnap.val();
-                    const mId = menuSnap.key;
-                    html += `
-                        <div class="flex justify-between items-center p-4 hover:bg-slate-50 transition-all">
-                            <div>
-                                <p class="text-xs font-black text-slate-700 uppercase">${menu.nama}</p>
-                                <p class="text-[10px] font-bold text-emerald-600">Rp ${menu.harga.toLocaleString()}</p>
-                            </div>
-                            <button onclick="hapusMenu('${namaStan}', '${mId}')" class="bg-red-50 text-red-500 p-2 px-4 rounded-xl text-[9px] font-black hover:bg-red-500 hover:text-white transition-all">HAPUS</button>
-                        </div>
-                    `;
+        db.ref('kantin_menus').on('value', snap => {
+            const cont = document.getElementById('list'); cont.innerHTML = "";
+            snap.forEach(stanSnap => {
+                let html = `<div class="bg-white p-4 rounded-[2rem] shadow-sm"><h3 class="text-[9px] font-black text-indigo-400 mb-3 uppercase border-b pb-1">${stanSnap.key}</h3>`;
+                stanSnap.forEach(mSnap => {
+                    const m = mSnap.val();
+                    html += `<div class="flex justify-between items-center mb-2 p-2 bg-slate-50 rounded-xl">
+                        <div class="text-[11px] font-bold text-slate-700">${m.nama} <br><span class="text-emerald-600">Rp ${m.harga.toLocaleString()}</span></div>
+                        <button onclick="del('${stanSnap.key}','${mSnap.key}')" class="text-[8px] bg-red-100 text-red-600 px-3 py-1 rounded-lg font-black">HAPUS</button>
+                    </div>`;
                 });
-
-                html += `</div></div>`;
-                container.innerHTML += html;
+                cont.innerHTML += html + `</div>`;
             });
         });
 
-        // 3. Fungsi Hapus Menu
-        function hapusMenu(stan, id) {
-            if(confirm("Yakin ingin menghapus menu ini?")) {
-                db.ref('kantin_menus/' + stan + '/' + id).remove();
-            }
-        }
+        function del(s, id) { if(confirm("Hapus menu?")) db.ref('kantin_menus/'+s+'/'+id).remove(); }
     </script>
 </body>
 </html>
