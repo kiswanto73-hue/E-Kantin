@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Admin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl">
+        <h2 class="text-center text-2xl font-black text-slate-800 mb-8 uppercase italic">Login Admin</h2>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Email Admin" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 font-bold text-xs">
+            <input type="password" id="password" placeholder="Password" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 font-bold text-xs">
+            <button onclick="login()" class="w-full bg-indigo-600 text-white font-black p-5 rounded-2xl shadow-lg uppercase text-xs tracking-widest mt-4">Masuk ke Admin 🚀</button>
+            <p id="msg" class="text-center text-red-500 text-[10px] font-bold uppercase mt-4"></p>
+        </div>
+        <a href="index.html" class="block text-center mt-6 text-[10px] font-bold text-slate-400 uppercase">Kembali ke Portal</a>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+            .then(() => { window.location.href = "admin-kantin.html"; })
+            .catch(() => { msg.innerText = "Akses Ditolak! Cek Email/Password."; });
+        }
+    </script>
+</body>
+</html>
