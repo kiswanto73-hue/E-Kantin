@@ -3,99 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin - E-Kantin Final</title>
+    <title>Admin Panel | E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <style>
-        @media print {
-            body * { visibility: hidden; }
-            #areaCetakMassal, #areaCetakMassal * { visibility: visible; }
-            #areaCetakMassal { position: absolute; left: 0; top: 0; width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; }
-            .no-print { display: none !important; }
-        }
-        .kartu-mini { width: 85mm; height: 50mm; border: 1px solid #000; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-inside: avoid; border-radius: 8px; }
-    </style>
 </head>
-<body class="bg-slate-50 p-4 md:p-8 font-sans">
+<body class="bg-slate-50 min-h-screen p-4">
 
-    <div class="max-w-6xl mx-auto no-print">
-        <div class="bg-indigo-900 text-white p-6 rounded-[2rem] shadow-xl mb-6 flex justify-between items-center">
-            <h1 class="font-black italic uppercase tracking-tighter">Admin Control Center v2.0</h1>
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 flex justify-between items-center border-b-4 border-indigo-500">
+            <div>
+                <h1 class="text-xl font-black italic">ADMIN PANEL 🛠️</h1>
+                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Kelola Saldo & Data Siswa</p>
+            </div>
             <div class="flex gap-2">
-                <a href="dashboard-kantin.html" class="bg-white/20 hover:bg-white text-white hover:text-indigo-900 px-4 py-2 rounded-xl text-[10px] font-black transition-all border border-white/30">DASHBOARD</a>
+                <a href="index.html" class="bg-white/10 p-3 rounded-xl text-[10px] font-bold uppercase">Portal</a>
+                <button onclick="logout()" class="bg-red-500 p-3 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-500/20">Keluar</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-indigo-50">
-                <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic">Kelola Akun & Saldo</h3>
-                <div class="space-y-2">
-                    <input type="text" id="idSiswa" placeholder="ID Siswa (Tetap)" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
-                    <input type="text" id="namaSiswa" placeholder="Nama Lengkap" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
-                    <input type="number" id="saldoSiswa" placeholder="Nominal Saldo" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
-                    
-                    <div class="flex gap-2 pt-2">
-                        <button onclick="simpanManual()" class="flex-1 bg-indigo-600 text-white font-black py-3 rounded-xl text-[10px] hover:bg-indigo-700 uppercase">Simpan</button>
-                        <button onclick="resetForm()" class="bg-slate-200 text-slate-600 px-4 py-3 rounded-xl text-[10px] font-black uppercase">Batal</button>
-                    </div>
-
-                    <div class="py-4 border-t mt-4">
-                        <p class="text-[9px] font-bold text-slate-400 mb-2 uppercase">Import Excel (ID, Nama, Saldo)</p>
-                        <input type="file" id="inputExcel" class="text-[9px] mb-2 w-full file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:bg-indigo-50 file:text-indigo-700">
-                        <button onclick="prosesExcel()" class="w-full bg-emerald-500 text-white font-black py-2 rounded-xl text-[10px] uppercase">Proses Excel 🚀</button>
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 h-fit">
+                <h3 class="text-[10px] font-black text-slate-400 mb-4 uppercase italic">Isi Saldo / Tambah Siswa</h3>
+                <div class="space-y-3">
+                    <input type="text" id="idSiswa" placeholder="ID Kartu (Scan/Ketik)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
+                    <input type="text" id="namaSiswa" placeholder="Nama Siswa" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
+                    <input type="number" id="saldoSiswa" placeholder="Jumlah Saldo (Rp)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
+                    <button onclick="updateData()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all">Simpan Data</button>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm overflow-hidden border">
-                <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase">Database Siswa</h3>
-                    <button onclick="siapkanCetakMassal()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black shadow-lg hover:bg-black transition-all">CETAK SEMUA KARTU 🖨️</button>
+            <div class="md:col-span-2">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <h3 class="text-[10px] font-black text-slate-400 mb-4 uppercase italic">Daftar Seluruh Siswa</h3>
+                    <div id="listSiswa" class="space-y-3 max-h-[500px] overflow-y-auto">
+                        </div>
                 </div>
-                <div class="max-h-[350px] overflow-y-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 text-[10px] font-black uppercase text-slate-400 sticky top-0">
-                            <tr><th class="p-3">ID</th><th class="p-3">NAMA</th><th class="p-3 text-right">SALDO</th><th class="p-3 text-center">AKSI</th></tr>
-                        </thead>
-                        <tbody id="tabelSiswa" class="divide-y divide-slate-50 italic"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white rounded-[2.5rem] p-6 shadow-sm border-2 border-emerald-100">
-                <h3 class="text-[10px] font-black text-emerald-900 mb-4 uppercase italic">Menu Terlaris (Porsi)</h3>
-                <div id="rekapMenuContainer" class="space-y-2"></div>
-            </div>
-            <div class="bg-white rounded-[2.5rem] p-6 shadow-sm border-2 border-indigo-100">
-                <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic">Pendapatan Per Unit Stan</h3>
-                <div id="rekapStanContainer" class="space-y-2"></div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border mb-10">
-            <div class="p-4 bg-orange-50 border-b"><h3 class="text-[10px] font-black text-orange-900 uppercase italic">Log Transaksi Terakhir</h3></div>
-            <div class="max-h-[400px] overflow-y-auto">
-                <table class="w-full text-left text-[11px]">
-                    <thead class="bg-slate-50 sticky top-0 uppercase font-black text-slate-400 border-b">
-                        <tr><th class="p-4">Waktu</th><th class="p-4">Siswa</th><th class="p-4">Stan</th><th class="p-4">Menu</th><th class="p-4 text-right">Total</th></tr>
-                    </thead>
-                    <tbody id="tabelHistory" class="divide-y divide-slate-100 font-bold italic"></tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <div id="areaCetakMassal" class="hidden"></div>
-
     <script>
-        // Konfigurasi Firebase Bapak
+        // Konfigurasi Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -106,103 +56,71 @@
             appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
         };
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.database();
 
-        // SIMPAN & EDIT MANUAL
-        function simpanManual() {
-            const id = document.getElementById('idSiswa').value;
-            const nama = document.getElementById('namaSiswa').value;
+        // 1. CEK SATPAM (Security)
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                // Jika paksa masuk tanpa login, tendang ke login.html
+                window.location.href = "login.html";
+            }
+        });
+
+        // 2. Fungsi Simpan / Update Data Siswa
+        function updateData() {
+            const id = document.getElementById('idSiswa').value.trim();
+            const nama = document.getElementById('namaSiswa').value.toUpperCase().trim();
             const saldo = parseInt(document.getElementById('saldoSiswa').value);
-            
-            if(id && nama && !isNaN(saldo)) {
-                db.ref('kantin_users/'+id).update({ nama: nama.toUpperCase(), saldo: saldo })
-                .then(() => { alert("Data Berhasil Disimpan!"); resetForm(); });
-            } else { alert("Lengkapi data!"); }
-        }
 
-        function editSiswa(id, nama, saldo) {
-            document.getElementById('idSiswa').value = id;
-            document.getElementById('idSiswa').disabled = true; // Kunci ID
-            document.getElementById('namaSiswa').value = nama;
-            document.getElementById('saldoSiswa').value = saldo;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function resetForm() {
-            document.getElementById('idSiswa').value = "";
-            document.getElementById('idSiswa').disabled = false;
-            document.getElementById('namaSiswa').value = "";
-            document.getElementById('saldoSiswa').value = "";
-        }
-
-        // IMPORT EXCEL
-        function prosesExcel() {
-            const file = document.getElementById('inputExcel').files[0];
-            if(!file) return alert("Pilih file!");
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                rows.forEach(r => {
-                    const id = r.ID || r.id;
-                    const nm = r.Nama || r.nama;
-                    const sd = r.Saldo || r.saldo || 0;
-                    if(id && nm) db.ref('kantin_users/'+id).set({ nama: nm.toString().toUpperCase(), saldo: parseInt(sd) });
+            if (id && nama && !isNaN(saldo)) {
+                db.ref('kantin_users/' + id).set({
+                    id: id,
+                    nama: nama,
+                    saldo: saldo
+                }).then(() => {
+                    alert("Data Berhasil Disimpan!");
+                    document.getElementById('idSiswa').value = "";
+                    document.getElementById('namaSiswa').value = "";
+                    document.getElementById('saldoSiswa').value = "";
                 });
-                alert("Sukses mengunggah " + rows.length + " data!");
-            };
-            reader.readAsArrayBuffer(file);
+            } else {
+                alert("Mohon isi semua data dengan benar!");
+            }
         }
 
-        // LOAD DATABASE SISWA
-        db.ref('kantin_users').on('value', snap => {
-            const tbody = document.getElementById('tabelSiswa');
-            tbody.innerHTML = "";
-            snap.forEach(c => {
-                const s = c.val();
-                tbody.innerHTML += `<tr class="border-b"><td class="p-3 font-black text-indigo-600">${c.key}</td><td class="p-3 uppercase font-bold">${s.nama}</td><td class="p-3 text-right text-emerald-600 font-black">Rp ${s.saldo.toLocaleString()}</td><td class="p-3 text-center"><button onclick="editSiswa('${c.key}','${s.nama}',${s.saldo})" class="bg-orange-500 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase">Edit</button></td></tr>`;
+        // 3. Tampilkan List Siswa (Real-time)
+        db.ref('kantin_users').on('value', (snapshot) => {
+            const list = document.getElementById('listSiswa');
+            list.innerHTML = "";
+            snapshot.forEach((child) => {
+                const data = child.val();
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">${data.id}</p>
+                            <p class="text-xs font-black text-slate-700 uppercase">${data.nama}</p>
+                        </div>
+                        <div class="text-right flex items-center gap-4">
+                            <span class="text-xs font-black text-emerald-600">Rp ${data.saldo.toLocaleString()}</span>
+                            <button onclick="hapusSiswa('${data.id}')" class="text-red-400 hover:text-red-600 font-bold text-lg">×</button>
+                        </div>
+                    </div>
+                `;
             });
         });
 
-        // LOAD LAPORAN & REKAP
-        db.ref('kantin_laporan').on('value', snap => {
-            const tHistory = document.getElementById('tabelHistory');
-            const rMenu = document.getElementById('rekapMenuContainer');
-            const rStan = document.getElementById('rekapStanContainer');
-            tHistory.innerHTML = ""; rMenu.innerHTML = ""; rStan.innerHTML = "";
-            let list = []; let hitungMenu = {}; let hitungStan = {};
-            
-            snap.forEach(c => {
-                const d = c.val(); list.push(d);
-                if(d.item) d.item.split(", ").forEach(m => hitungMenu[m] = (hitungMenu[m] || 0) + 1);
-                hitungStan[d.stan] = (hitungStan[d.stan] || 0) + d.total;
-            });
-
-            list.reverse().forEach(d => {
-                tHistory.innerHTML += `<tr><td class="p-4 text-slate-400 font-normal">${d.waktu}</td><td class="p-4 text-indigo-600 uppercase">${d.namaSiswa}</td><td class="p-4 uppercase text-[10px]">${d.stan}</td><td class="p-4 text-slate-500 font-normal">${d.item}</td><td class="p-4 text-right text-orange-600 font-black">Rp ${d.total.toLocaleString()}</td></tr>`;
-            });
-
-            for(const [m, j] of Object.entries(hitungMenu)) {
-                rMenu.innerHTML += `<div class="flex justify-between bg-emerald-50 p-2 rounded-xl border border-emerald-100"><span class="text-[10px] font-bold uppercase">${m}</span><span class="font-black text-emerald-600">${j} Porsi</span></div>`;
+        // 4. Fungsi Hapus Siswa
+        function hapusSiswa(id) {
+            if (confirm("Hapus data siswa ini?")) {
+                db.ref('kantin_users/' + id).remove();
             }
-            for(const [s, t] of Object.entries(hitungStan)) {
-                rStan.innerHTML += `<div class="flex justify-between bg-indigo-50 p-2 rounded-xl border border-indigo-100"><span class="text-[10px] font-bold uppercase">${s}</span><span class="font-black text-indigo-600">Rp ${t.toLocaleString()}</span></div>`;
-            }
-        });
+        }
 
-        // CETAK MASAL
-        function siapkanCetakMassal() {
-            const area = document.getElementById('areaCetakMassal');
-            area.innerHTML = "";
-            db.ref('kantin_users').once('value', snap => {
-                snap.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = "kartu-mini";
-                    div.innerHTML = `<p style="font-size:8px;font-weight:900">KARTU E-KANTIN</p><svg id="bc_${c.key}"></svg><p style="font-size:10px;font-weight:900;text-transform:uppercase;margin-top:5px;">${c.val().nama}</p><p style="font-size:7px;color:#666">ID: ${c.key}</p>`;
-                    area.appendChild(div);
-                    JsBarcode("#bc_"+c.key, c.key, {format:"CODE128", width:1.5, height:40, displayValue:false});
-                });
-                setTimeout(() => { window.print(); }, 1000);
+        // 5. Fungsi Logout
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = "index.html";
             });
         }
     </script>
