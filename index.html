@@ -3,94 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | E-Kantin Sekolah</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <title>E-Kantin Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
 </head>
 <body class="bg-slate-900 min-h-screen flex items-center justify-center p-6">
-
-    <div class="bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full -mr-10 -mt-10"></div>
-        
-        <div class="relative z-10">
-            <div class="text-center mb-10">
-                <div class="bg-indigo-600 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200 rotate-3">
-                    <span class="text-3xl">💳</span>
-                </div>
-                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tighter">E-KANTIN</h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Portal Manajemen Keuangan</p>
+    <div class="w-full max-w-sm space-y-4">
+        <div class="text-center mb-10">
+            <div class="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/20">
+                <span class="text-3xl">🏪</span>
             </div>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 ml-4 mb-1 block uppercase">Email Akses</label>
-                    <input type="email" id="email" placeholder="admin@sekolah.com" 
-                        class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 focus:bg-white transition-all font-bold text-slate-700">
-                </div>
-                
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 ml-4 mb-1 block uppercase">Kata Sandi</label>
-                    <input type="password" id="password" placeholder="••••••••" 
-                        class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-500 focus:bg-white transition-all font-bold text-slate-700">
-                </div>
-                
-                <button onclick="login()" class="w-full bg-indigo-600 text-white font-extrabold p-5 rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all uppercase tracking-widest text-sm mt-4">
-                    Masuk Sekarang 🚀
-                </button>
-            </div>
-            
-            <p id="msg" class="text-center text-red-500 text-[10px] font-bold mt-6 h-4 uppercase"></p>
+            <h1 class="text-2xl font-black text-white italic uppercase tracking-tighter">E-KANTIN SYSTEM</h1>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-2">Pilih Layanan</p>
         </div>
+
+        <a href="kasir-kantin.html" class="block w-full bg-emerald-500 text-white font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🛒 MENU KASIR</a>
+        <a href="manajemen-menu.html" class="block w-full bg-orange-500 text-white font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🥗 ATUR STOK & MENU</a>
+        
+        <div class="py-4 flex items-center gap-4">
+            <div class="h-[1px] bg-slate-800 flex-1"></div>
+            <span class="text-[9px] font-bold text-slate-600 uppercase">Khusus Admin</span>
+            <div class="h-[1px] bg-slate-800 flex-1"></div>
+        </div>
+
+        <a href="login.html" class="block w-full bg-slate-800 text-indigo-400 border-2 border-indigo-900 font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🛠️ PANEL ADMIN</a>
     </div>
-
-    <script>
-        // KONFIGURASI ASLI MILIK BAPAK
-        const firebaseConfig = {
-            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
-            authDomain: "e-kantin-91f0c.firebaseapp.com",
-            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "e-kantin-91f0c",
-            storageBucket: "e-kantin-91f0c.firebasestorage.app",
-            messagingSenderId: "981834126006",
-            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
-        };
-
-        // Inisialisasi
-        firebase.initializeApp(firebaseConfig);
-
-        function login() {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const msg = document.getElementById('msg');
-
-            if(!email || !pass) {
-                msg.innerText = "⚠️ Mohon isi semua bidang!";
-                return;
-            }
-
-            msg.className = "text-center text-indigo-500 text-[10px] font-bold mt-6 h-4 uppercase animate-pulse";
-            msg.innerText = "⏳ Memverifikasi Identitas...";
-
-            firebase.auth().signInWithEmailAndPassword(email, pass)
-            .then((userCredential) => {
-                msg.innerText = "✅ Berhasil! Mengalihkan...";
-                setTimeout(() => {
-                    window.location.href = "dashboard-kantin.html";
-                }, 1000);
-            })
-            .catch((error) => {
-                msg.className = "text-center text-red-500 text-[10px] font-bold mt-6 h-4 uppercase";
-                if(error.code === 'auth/wrong-password') msg.innerText = "❌ Password salah!";
-                else if(error.code === 'auth/user-not-found') msg.innerText = "❌ Email tidak terdaftar!";
-                else msg.innerText = "❌ Akses Ditolak!";
-                console.error(error);
-            });
-        }
-    </script>
 </body>
 </html>
