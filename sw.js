@@ -1,25 +1,34 @@
 const CACHE_NAME = 'ekantin-v1';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './kasir.html' // Tambahkan nama file kasir bapak di sini jika namanya berbeda
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/admin.html',
+  'https://cdn.tailwindcss.com'
 ];
 
-// Proses Instalasi Service Worker
+// Install Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
+      return cache.addAll(ASSETS_TO_CACHE);
     })
   );
 });
 
-// Logika agar aplikasi tetap bisa dibuka meski sinyal lemah
+// Aktivasi & Bersihkan Cache Lama
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
+    })
+  );
+});
+
+// Ambil data (Fetch)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
     })
   );
 });
