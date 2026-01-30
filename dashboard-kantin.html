@@ -66,7 +66,9 @@
                 <div class="overflow-x-auto max-h-[400px]">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50">
-                            <tr class="text-[9px] font-black text-slate-400 uppercase"><th class="p-4">Waktu</th><th class="p-4">Siswa</th><th class="p-4">Stan</th><th class="p-4 text-right">Nominal</th></tr>
+                            <tr class="text-[9px] font-black text-slate-400 uppercase">
+                                <th class="p-4">Waktu</th><th class="p-4">Siswa</th><th class="p-4">Stan</th><th class="p-4 text-right">Nominal</th>
+                            </tr>
                         </thead>
                         <tbody id="listTrans" class="divide-y divide-slate-50 text-[10px] font-bold italic"></tbody>
                     </table>
@@ -89,23 +91,24 @@
             appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.database();
 
-        // SISTEM SATPAM (Cek Login)
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                document.getElementById('userEmail').innerText = user.email;
-            } else {
-                window.location.href = "index.html"; // Tendang ke login jika belum masuk
-            }
-        });
+        // --- SISTEM SATPAM BARU (ANTI TENDANG) ---
+        const statusLogin = sessionStorage.getItem("ownerLoggedIn");
+        const emailLogin = sessionStorage.getItem("ownerEmail");
 
-        function logout() {
-            auth.signOut().then(() => { window.location.href = "index.html"; });
+        if (statusLogin !== "true") {
+            window.location.replace("index.html");
+        } else {
+            document.getElementById('userEmail').innerText = emailLogin;
         }
 
-        // LOGIKA DATABASE (Sama seperti sebelumnya)
+        function logout() {
+            sessionStorage.clear();
+            window.location.replace("index.html");
+        }
+
+        // --- LOGIKA DATABASE ---
         let myChart = null;
         db.ref('kantin_transactions').on('value', snapshot => {
             const list = document.getElementById('listTrans');
@@ -118,7 +121,7 @@
                     stanCounts[d.stan] = (stanCounts[d.stan] || 0) + d.nominal;
                     list.insertAdjacentHTML('afterbegin', `
                         <tr class="hover:bg-slate-50 border-b border-slate-50">
-                            <td class="p-4 text-slate-400 font-normal">${d.waktu}</td>
+                            <td class="p-4 text-slate-400 font-normal text-[8px]">${d.waktu}</td>
                             <td class="p-4 font-black uppercase text-indigo-900">${d.nama_siswa}</td>
                             <td class="p-4 text-slate-500 uppercase">${d.stan}</td>
                             <td class="p-4 text-right font-black text-green-600">Rp ${d.nominal.toLocaleString()}</td>
@@ -144,8 +147,24 @@
             });
         }
 
-        function downloadLaporan() { /* Kode XLSX sama seperti sebelumnya */ }
-        function resetTransaksi() { /* Kode remove() sama seperti sebelumnya */ }
+        function downloadLaporan() {
+            db.ref('kantin_transactions').once('value', snapshot => {
+                let data = [];
+                snapshot.forEach(child => { data.push(child.val()); });
+                if(data.length === 0) return alert("Tidak ada data untuk didownload");
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Laporan Omzet");
+                XLSX.writeFile(wb, "Omzet_E-Kantin.xlsx");
+            });
+        }
+
+        function resetTransaksi() {
+            if (confirm("⚠️ PERINGATAN: Hapus seluruh data transaksi hari ini? Tindakan ini tidak bisa dibatalkan!")) {
+                db.ref('kantin_transactions').remove();
+                alert("Data berhasil direset.");
+            }
+        }
     </script>
 </body>
 </html>
