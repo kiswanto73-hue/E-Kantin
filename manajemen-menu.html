@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Menu & Stok Audit - Cantik & Keren</title>
+    <title>Manajemen Menu & Stok Audit - E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +16,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter uppercase leading-none">Manajemen Menu 📋</h1>
                 <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Audit Stok Awal & Akhir Real-Time</p>
             </div>
-            <a href="dashboard-kantin.html" class="bg-white/10 hover:bg-white/20 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border border-white/10">Dashboard</a>
+            <a href="admin-kantin.html" class="bg-white/10 hover:bg-white/20 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border border-white/10">Admin</a>
         </div>
 
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm mb-8 border border-indigo-50">
@@ -53,12 +53,16 @@
             </div>
         </div>
 
-        <div id="displayMenu" class="space-y-6 pb-20">
-            </div>
+        <div id="displayMenu" class="space-y-6 pb-20"></div>
     </div>
 
     <script>
-        // Gunakan Config Firebase Bapak
+        // --- SATPAM DIGITAL (SINKRON PORTAL) ---
+        // Jika tidak login sebagai Owner, tendang ke index
+        if (sessionStorage.getItem("ownerLoggedIn") !== "true") {
+            window.location.replace("index.html");
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -85,6 +89,7 @@
                     harga: harga,
                     stok_awal: awal,
                     stok_akhir: akhir,
+                    stok: akhir, // Sinkronisasi dengan stok kasir
                     terjual: (awal - akhir) < 0 ? 0 : (awal - akhir)
                 }).then(() => {
                     alert("✅ " + nama + " BERHASIL DIUPDATE!");
@@ -110,7 +115,7 @@
             snapshot.forEach(stanSnap => {
                 const namaStan = stanSnap.key;
                 let htmlStan = `
-                    <div class="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100">
+                    <div class="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 mb-4">
                         <div class="bg-indigo-50/50 px-6 py-4 flex justify-between items-center border-b border-indigo-50">
                             <h3 class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">${namaStan}</h3>
                         </div>
@@ -128,11 +133,15 @@
                                     <p class="text-xs font-black text-slate-800 uppercase italic">${m.nama}</p>
                                     <p class="text-[10px] font-bold text-indigo-600">Rp ${m.harga.toLocaleString()}</p>
                                 </div>
-                                <button onclick="hapusMenu('${namaStan}', '${mId}')" class="text-slate-200 hover:text-red-500 transition-all p-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
+                                <div class="flex gap-2">
+                                    <button onclick="editInput('${namaStan}','${mId}', '${m.nama}', ${m.harga}, ${m.stok_awal}, ${m.stok_akhir})" class="text-indigo-400 hover:text-indigo-600 transition-all p-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    </button>
+                                    <button onclick="hapusMenu('${namaStan}', '${mId}')" class="text-slate-200 hover:text-red-500 transition-all p-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
                             </div>
-                            
                             <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                 <div class="flex-1 text-center">
                                     <p class="text-[7px] font-black text-slate-400 uppercase">Awal</p>
@@ -157,6 +166,15 @@
                 container.innerHTML += htmlStan;
             });
         });
+
+        function editInput(stan, id, nama, harga, awal, akhir) {
+            document.getElementById('selectStan').value = stan;
+            document.getElementById('namaMenu').value = nama;
+            document.getElementById('hargaMenu').value = harga;
+            document.getElementById('stokAwal').value = awal;
+            document.getElementById('stokAkhir').value = akhir;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         function hapusMenu(stan, id) {
             if (confirm("HAPUS DATA INI?")) {
