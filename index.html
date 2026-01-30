@@ -3,29 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Kantin Portal</title>
+    <title>E-Kantin Indonesia Hebat</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1b4b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081918.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-sm space-y-4">
-        <div class="text-center mb-10">
-            <div class="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/20">
-                <span class="text-3xl">🏪</span>
-            </div>
-            <h1 class="text-2xl font-black text-white italic uppercase tracking-tighter">E-KANTIN SYSTEM</h1>
-            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-2">Pilih Layanan</p>
-        </div>
+<body class="bg-slate-100 font-sans min-h-screen pb-20">
 
-        <a href="kasir-kantin.html" class="block w-full bg-emerald-500 text-white font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🛒 MENU KASIR</a>
-        <a href="manajemen-menu.html" class="block w-full bg-orange-500 text-white font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🥗 ATUR STOK & MENU</a>
-        
-        <div class="py-4 flex items-center gap-4">
-            <div class="h-[1px] bg-slate-800 flex-1"></div>
-            <span class="text-[9px] font-bold text-slate-600 uppercase">Khusus Admin</span>
-            <div class="h-[1px] bg-slate-800 flex-1"></div>
-        </div>
-
-        <a href="login.html" class="block w-full bg-slate-800 text-indigo-400 border-2 border-indigo-900 font-black p-5 rounded-2xl shadow-lg text-center uppercase text-xs tracking-widest">🛠️ PANEL ADMIN</a>
+    <div class="bg-indigo-950 text-white p-8 rounded-b-[3rem] shadow-2xl border-b-8 border-yellow-400 mb-6 text-center">
+        <h1 class="text-3xl font-black italic tracking-tighter uppercase">E-Kantin 🥤</h1>
+        <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em] mt-2">Indonesia Hebat Digital System</p>
     </div>
+
+    <div class="max-w-md mx-auto px-4 space-y-4">
+        <a href="manajemen-menu.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-indigo-600 hover:scale-95 transition-all">
+            <h3 class="font-black text-indigo-900 uppercase italic">📋 Manajemen Menu</h3>
+            <p class="text-[10px] text-slate-400 font-bold uppercase">Atur Stok & Harga</p>
+        </a>
+        
+        <a href="dashboard-kantin.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-emerald-500 hover:scale-95 transition-all">
+            <h3 class="font-black text-indigo-900 uppercase italic">📊 Laporan Penjualan</h3>
+            <p class="text-[10px] text-slate-400 font-bold uppercase">Pantau Pendapatan Real-time</p>
+        </a>
+    </div>
+
+    <div class="fixed bottom-6 left-0 right-0 text-center">
+        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">V.1.0 - App Ready for Playstore</p>
+    </div>
+
+    <script>
+        // KONFIGURASI FIREBASE (Ganti dengan config Bapak jika berbeda)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // PENDAFTARAN SERVICE WORKER (AGAR BISA JADI APLIKASI)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Aplikasi E-Kantin Siap!'))
+                    .catch(err => console.log('Pendaftaran Gagal', err));
+            });
+        }
+    </script>
 </body>
 </html>
