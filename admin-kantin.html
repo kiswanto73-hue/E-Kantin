@@ -3,139 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - SD Indonesia Hebat</title>
+    <title>Admin Super - SD Indonesia Hebat</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen font-sans">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
 
-    <div class="bg-indigo-950 text-white p-8 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-                <h1 class="text-3xl font-black uppercase italic tracking-tighter leading-none">Management Center 🛡️</h1>
-                <p class="text-xs font-bold text-yellow-400 uppercase tracking-[0.3em] mt-2">SD Indonesia Hebat - E-Kantin System</p>
+    <div class="bg-indigo-950 text-white p-6 rounded-b-[3rem] shadow-2xl border-b-8 border-yellow-400 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl font-black uppercase italic tracking-tighter">Admin Control Panel 🛡️</h1>
+                <p class="text-[9px] font-bold text-yellow-400 uppercase tracking-widest mt-1">Sistem E-Kantin SD Indonesia Hebat</p>
             </div>
-            <div class="flex gap-3">
-                <a href="manajemen-menu.html" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg transition-all">🍱 Atur Stok</a>
-                <a href="index.html" class="bg-red-600 hover:bg-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg transition-all">🚪 Keluar</a>
+            <div class="flex flex-wrap justify-center gap-2">
+                <button onclick="window.print()" class="bg-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase hover:bg-white/20">🖨️ Cetak Halaman</button>
+                <a href="manajemen-menu.html" class="bg-emerald-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase hover:bg-emerald-500">🍱 Menu & Stok</a>
+                <a href="index.html" class="bg-red-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase">🚪 Keluar</a>
             </div>
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto p-4 md:p-8 -mt-10">
+    <div class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-8 rounded-[3rem] shadow-xl border-b-4 border-indigo-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Total Nasabah</p>
-                <h2 id="jmlSiswa" class="text-4xl font-black text-indigo-900 mt-2">0</h2>
-                <p class="text-[9px] font-bold text-indigo-400 mt-1 uppercase italic leading-none">Siswa Terdaftar</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1 grid grid-cols-1 gap-4">
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border-l-8 border-indigo-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Total Dana Nasabah</p>
+                    <h2 id="totalTabungan" class="text-3xl font-black text-indigo-900">Rp 0</h2>
+                </div>
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border-l-8 border-emerald-500">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Omzet Hari Ini</p>
+                    <h2 id="omzetHariIni" class="text-3xl font-black text-emerald-600">Rp 0</h2>
+                </div>
             </div>
-            <div class="bg-white p-8 rounded-[3rem] shadow-xl border-b-4 border-emerald-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Total Dana Siswa</p>
-                <h2 id="totalTabungan" class="text-4xl font-black text-emerald-600 mt-2">Rp 0</h2>
-                <p class="text-[9px] font-bold text-emerald-400 mt-1 uppercase italic leading-none">Saldo Mengendap</p>
-            </div>
-            <div class="bg-white p-8 rounded-[3rem] shadow-xl border-b-4 border-yellow-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Omzet Hari Ini</p>
-                <h2 id="omzetHariIni" class="text-4xl font-black text-indigo-900 mt-2">Rp 0</h2>
-                <p class="text-[9px] font-bold text-yellow-600 mt-1 uppercase italic leading-none">Transaksi Berhasil</p>
+            <div class="lg:col-span-2 bg-white p-6 rounded-[3rem] shadow-sm">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 text-center italic">Grafik Aktivitas Kantin</h3>
+                <canvas id="chartTransaksi" height="100"></canvas>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             
-            <div class="lg:col-span-1">
-                <div class="bg-white p-8 rounded-[3.5rem] shadow-xl sticky top-8 border border-indigo-50">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="bg-indigo-100 p-2 rounded-2xl">👤</span>
-                        <h3 class="text-sm font-black text-indigo-900 uppercase italic">Input Data Siswa</h3>
-                    </div>
-                    
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-8 rounded-[3rem] shadow-xl border border-indigo-50">
+                    <h3 class="text-xs font-black text-indigo-900 mb-6 uppercase italic flex items-center gap-2"><span>👤</span> Data Siswa</h3>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-[9px] font-black text-slate-400 uppercase ml-4 mb-2 block">ID Kartu (Scan/Ketik)</label>
-                            <input type="text" id="siswaID" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none focus:ring-4 ring-indigo-500 transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-black text-slate-400 uppercase ml-4 mb-2 block">Nama Lengkap Siswa</label>
-                            <input type="text" id="siswaNama" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none focus:ring-4 ring-indigo-500 transition-all uppercase">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-black text-slate-400 uppercase ml-4 mb-2 block">Kelas</label>
-                            <input type="text" id="siswaKelas" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-sm outline-none focus:ring-4 ring-indigo-500 transition-all uppercase">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-black text-slate-400 uppercase ml-4 mb-2 block">Setoran Saldo (Rp)</label>
-                            <input type="number" id="siswaSaldo" class="w-full p-4 bg-emerald-50 text-emerald-700 rounded-2xl font-black text-sm outline-none focus:ring-4 ring-emerald-500 transition-all">
-                        </div>
-                        
-                        <button onclick="simpanSiswa()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-lg hover:bg-indigo-700 active:scale-95 transition-all uppercase text-[10px] tracking-widest mt-4">
-                            Simpan & Update Data 🚀
-                        </button>
+                        <input type="text" id="siswaID" placeholder="ID KARTU" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-2 ring-indigo-500">
+                        <input type="text" id="siswaNama" placeholder="NAMA LENGKAP" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-2 ring-indigo-500 uppercase">
+                        <select id="siswaKelas" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none border-none">
+                            <option value="">PILIH KELAS</option>
+                            <option value="1">KELAS 1</option><option value="2">KELAS 2</option>
+                            <option value="3">KELAS 3</option><option value="4">KELAS 4</option>
+                            <option value="5">KELAS 5</option><option value="6">KELAS 6</option>
+                        </select>
+                        <input type="number" id="siswaSaldo" placeholder="TOP UP SALDO (RP)" class="w-full p-4 bg-emerald-50 text-emerald-700 rounded-2xl font-black text-xs outline-none">
+                        <button onclick="simpanSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all shadow-lg">Simpan & Cetak</button>
                     </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 space-y-8">
-                <div class="bg-white rounded-[3.5rem] shadow-xl overflow-hidden border border-slate-50">
-                    <div class="p-8 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
-                        <h3 class="text-xs font-black text-slate-500 uppercase italic">Nasabah E-Kantin Terdaftar</h3>
-                        <span class="bg-indigo-100 text-indigo-600 text-[10px] font-black px-4 py-1 rounded-full uppercase">Real-Time Data</span>
+            <div class="lg:col-span-3 space-y-6">
+                <div class="bg-white rounded-[3rem] shadow-xl overflow-hidden border border-slate-100">
+                    <div class="p-6 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
+                        <h3 class="text-xs font-black text-slate-500 uppercase italic">Nasabah E-Kantin</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="cariSiswa" onkeyup="filterTabel()" placeholder="Cari Nama..." class="p-2 px-4 rounded-xl border border-slate-200 text-[10px] font-bold outline-none">
+                            <select id="filterKelas" onchange="filterTabel()" class="p-2 rounded-xl border border-slate-200 text-[10px] font-bold outline-none">
+                                <option value="">SEMUA KELAS</option>
+                                <option value="1">KELAS 1</option><option value="2">KELAS 2</option>
+                                <option value="3">KELAS 3</option><option value="4">KELAS 4</option>
+                                <option value="5">KELAS 5</option><option value="6">KELAS 6</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase">
+                    <div class="overflow-x-auto max-h-[400px]">
+                        <table id="tabelNasabah" class="w-full text-left text-xs">
+                            <thead class="sticky top-0 bg-white shadow-sm font-black text-slate-400 uppercase text-[9px]">
                                 <tr>
-                                    <th class="p-6">ID Kartu</th>
-                                    <th class="p-6">Nama Siswa</th>
-                                    <th class="p-6">Kelas</th>
-                                    <th class="p-6 text-right">Saldo</th>
-                                    <th class="p-6 text-center">Aksi</th>
+                                    <th class="p-5">ID</th><th class="p-5">Nama Siswa</th><th class="p-5">Kelas</th><th class="p-5 text-right">Saldo</th><th class="p-5 text-center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="listSiswa" class="text-xs font-bold text-slate-600 divide-y divide-slate-50">
-                                </tbody>
+                            <tbody id="listSiswa" class="font-bold text-slate-600 divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="bg-indigo-900 rounded-[3.5rem] p-8 shadow-2xl text-white border-b-8 border-emerald-500">
-                    <div class="flex justify-between items-center mb-8">
-                        <h3 class="text-sm font-black uppercase italic tracking-widest">Laporan Bulanan 📊</h3>
-                        <div class="flex gap-2">
-                            <select id="fBulan" class="bg-white/10 p-2 rounded-xl text-[10px] font-bold border-none outline-none">
-                                <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                                <option value="04" selected>April</option><option value="05">Mei</option><option value="06">Juni</option>
-                            </select>
-                            <button onclick="tarikLaporan()" class="bg-yellow-400 text-indigo-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Tampilkan</button>
-                        </div>
+                <div class="bg-indigo-900 rounded-[3rem] p-8 text-white shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xs font-black uppercase italic tracking-widest">Aktivitas Log Siswa 📜</h3>
+                        <button onclick="resetLog()" class="text-[8px] font-black bg-red-500/20 hover:bg-red-500/40 text-red-300 px-4 py-2 rounded-full border border-red-500/30 uppercase">Reset Semua Log</button>
                     </div>
-                    
-                    <div id="areaLaporan" class="hidden">
-                        <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                            <div class="bg-white/5 p-4 rounded-3xl border border-white/10">
-                                <p class="text-[8px] uppercase opacity-60">Omzet Terpilih</p>
-                                <p id="totalOmzet" class="text-xl font-black text-emerald-400 mt-1">Rp 0</p>
-                            </div>
-                            <div class="bg-white/5 p-4 rounded-3xl border border-white/10">
-                                <p class="text-[8px] uppercase opacity-60">Total Transaksi</p>
-                                <p id="totalTrx" class="text-xl font-black text-yellow-400 mt-1">0</p>
-                            </div>
+                    <div id="logSiswa" class="space-y-3 max-h-60 overflow-y-auto pr-4 font-mono text-[10px]">
                         </div>
-                        <div class="max-h-60 overflow-y-auto rounded-2xl bg-white/5 p-2">
-                            <table class="w-full text-[9px] text-left uppercase font-bold">
-                                <tbody id="tabelLaporan" class="divide-y divide-white/10"></tbody>
-                            </table>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <div id="areaCetak" class="hidden print:block fixed inset-0 bg-white p-10">
+        <div style="width: 350px; border: 4px solid #312e81; border-radius: 20px; padding: 20px; text-align: center;">
+            <h2 style="font-weight: 900; color: #312e81; font-size: 20px;">KARTU E-KANTIN</h2>
+            <p style="font-size: 10px; margin-bottom: 20px;">SD INDONESIA HEBAT</p>
+            <div id="printQR" style="background: #f1f5f9; height: 150px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 10px; font-weight: 900; color: #cbd5e1;">QR CODE AREA</div>
+            <p id="printNama" style="font-weight: 900; font-size: 16px; text-transform: uppercase;"></p>
+            <p id="printID" style="font-family: monospace; font-size: 12px; color: #64748b;"></p>
+        </div>
+    </div>
+
     <script>
-        // CONFIG FIREBASE (TETAP PAKAI PUNYA BAPAK)
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -148,93 +125,92 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // PROTEKSI LOGIN
-        if (sessionStorage.getItem("ownerLoggedIn") !== "true") { window.location.replace("index.html"); }
-
-        // --- MONITORING SISWA REAL-TIME ---
+        // 1. MONITORING & STATISTIK
         db.ref('kantin_users').on('value', snap => {
             const table = document.getElementById('listSiswa');
             table.innerHTML = "";
-            let totalS = 0, jml = 0;
+            let totalS = 0;
             snap.forEach(child => {
                 const s = child.val();
-                totalS += s.saldo; jml++;
+                totalS += s.saldo;
                 table.innerHTML += `
-                    <tr class="hover:bg-indigo-50/50 transition-all">
-                        <td class="p-6 font-mono text-indigo-900">${child.key}</td>
-                        <td class="p-6 text-slate-900 uppercase">${s.nama}</td>
-                        <td class="p-6">${s.kelas || '-'}</td>
-                        <td class="p-6 text-right font-black text-emerald-600 italic text-sm">Rp ${s.saldo.toLocaleString()}</td>
-                        <td class="p-6 text-center flex gap-2 justify-center">
-                            <button onclick="editSiswa('${child.key}', '${s.nama}', '${s.kelas}', ${s.saldo})" class="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">✏️</button>
-                            <button onclick="hapusSiswa('${child.key}')" class="p-2 bg-red-50 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">🗑️</button>
+                    <tr>
+                        <td class="p-5 font-mono text-[10px] text-indigo-400">${child.key}</td>
+                        <td class="p-5 uppercase">${s.nama}</td>
+                        <td class="p-5 text-slate-400">${s.kelas || '-'}</td>
+                        <td class="p-5 text-right font-black text-emerald-600 italic">Rp ${s.saldo.toLocaleString()}</td>
+                        <td class="p-5 text-center flex gap-2 justify-center">
+                            <button onclick="editSiswa('${child.key}','${s.nama}','${s.kelas}',${s.saldo})" class="text-indigo-400">✏️</button>
+                            <button onclick="cetakKartu('${child.key}','${s.nama}')" class="text-yellow-500">🖨️</button>
+                            <button onclick="hapusSiswa('${child.key}')" class="text-red-300">🗑️</button>
                         </td>
                     </tr>
                 `;
             });
             document.getElementById('totalTabungan').innerText = "Rp " + totalS.toLocaleString();
-            document.getElementById('jmlSiswa').innerText = jml;
         });
 
-        // --- OMZET HARI INI ---
-        const hariIni = new Date().toISOString().split('T')[0];
-        db.ref('kantin_transaksi').on('value', snap => {
-            let total = 0;
+        // 2. LOG TRANSAKSI HARI INI
+        db.ref('kantin_transaksi').limitToLast(20).on('value', snap => {
+            const logArea = document.getElementById('logSiswa');
+            const hariIni = new Date().toISOString().split('T')[0];
+            let omzet = 0;
+            logArea.innerHTML = "";
+            
             snap.forEach(child => {
-                if(child.val().waktu && child.val().waktu.startsWith(hariIni)) {
-                    total += child.val().total;
-                }
+                const t = child.val();
+                if(t.waktu.startsWith(hariIni)) omzet += t.total;
+                logArea.innerHTML = `
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                        <span><b class="text-yellow-400">${t.nama_siswa}</b> Membeli ${t.detail_pesanan}</span>
+                        <span class="text-emerald-400">Rp ${t.total.toLocaleString()}</span>
+                    </div>
+                ` + logArea.innerHTML;
             });
-            document.getElementById('omzetHariIni').innerText = "Rp " + total.toLocaleString();
+            document.getElementById('omzetHariIni').innerText = "Rp " + omzet.toLocaleString();
         });
 
+        // 3. FUNGSI SIMPAN & EDIT
         function simpanSiswa() {
-            const id = document.getElementById('siswaID').value.trim();
-            const nm = document.getElementById('siswaNama').value.trim().toUpperCase();
-            const kl = document.getElementById('siswaKelas').value.trim().toUpperCase();
+            const id = document.getElementById('siswaID').value;
+            const nm = document.getElementById('siswaNama').value.toUpperCase();
+            const kl = document.getElementById('siswaKelas').value;
             const sl = parseInt(document.getElementById('siswaSaldo').value) || 0;
             if(id && nm) {
-                db.ref('kantin_users/' + id).set({ nama: nm, kelas: kl, saldo: sl })
-                .then(() => { alert("Berhasil Diupdate!"); resetForm(); });
-            } else { alert("Minimal ID dan Nama diisi!"); }
+                db.ref('kantin_users/'+id).update({ nama:nm, kelas:kl, saldo:sl })
+                .then(() => { alert("Data Berhasil Diupdate!"); resetForm(); });
+            }
         }
 
-        function editSiswa(id, nm, kl, sl) {
-            document.getElementById('siswaID').value = id;
-            document.getElementById('siswaNama').value = nm;
-            document.getElementById('siswaKelas').value = kl;
-            document.getElementById('siswaSaldo').value = sl;
-            window.scrollTo({top: 0, behavior: 'smooth'});
+        // 4. FITUR FILTER & SEARCH
+        function filterTabel() {
+            const cari = document.getElementById('cariSiswa').value.toUpperCase();
+            const kl = document.getElementById('filterKelas').value;
+            const tr = document.getElementById('tabelNasabah').getElementsByTagName('tr');
+            for(let i=1; i<tr.length; i++) {
+                const tdNama = tr[i].getElementsByTagName('td')[1].innerText;
+                const tdKelas = tr[i].getElementsByTagName('td')[2].innerText;
+                tr[i].style.display = (tdNama.includes(cari) && tdKelas.includes(kl)) ? "" : "none";
+            }
         }
 
-        function hapusSiswa(id) { if(confirm("Hapus Siswa?")) db.ref('kantin_users/' + id).remove(); }
-        function resetForm() { document.getElementById('siswaID').value = ""; document.getElementById('siswaNama').value = ""; document.getElementById('siswaKelas').value = ""; document.getElementById('siswaSaldo').value = ""; }
-
-        // --- LAPORAN BULANAN (FITUR TAMBAHAN) ---
-        function tarikLaporan() {
-            const filter = "2024-" + document.getElementById('fBulan').value;
-            const tBody = document.getElementById('tabelLaporan');
-            document.getElementById('areaLaporan').classList.remove('hidden');
-            tBody.innerHTML = "";
-            db.ref('kantin_transaksi').once('value', snap => {
-                let total = 0, count = 0;
-                snap.forEach(child => {
-                    const trx = child.val();
-                    if(trx.waktu && trx.waktu.startsWith(filter)) {
-                        total += trx.total; count++;
-                        tBody.innerHTML += `
-                            <tr>
-                                <td class="p-3 text-white/40">${trx.waktu.split(' ')[0]}</td>
-                                <td class="p-3 text-white/90">${trx.nama_siswa}</td>
-                                <td class="p-3 text-right text-emerald-400 font-black">Rp ${trx.total.toLocaleString()}</td>
-                            </tr>
-                        `;
-                    }
-                });
-                document.getElementById('totalOmzet').innerText = "Rp " + total.toLocaleString();
-                document.getElementById('totalTrx').innerText = count;
-            });
+        // 5. CETAK KARTU SIMPEL
+        function cetakKartu(id, nama) {
+            document.getElementById('printNama').innerText = nama;
+            document.getElementById('printID').innerText = id;
+            document.getElementById('printQR').innerText = "ID: " + id;
+            window.print();
         }
+
+        // 6. RESET LOG
+        function resetLog() {
+            if(confirm("Hapus semua riwayat transaksi? (Data saldo siswa tetap aman)")) {
+                db.ref('kantin_transaksi').remove();
+            }
+        }
+
+        function resetForm() { document.getElementById('siswaID').value=""; document.getElementById('siswaNama').value=""; document.getElementById('siswaSaldo').value=""; }
+        function editSiswa(id, nm, kl, sl) { document.getElementById('siswaID').value=id; document.getElementById('siswaNama').value=nm; document.getElementById('siswaKelas').value=kl; document.getElementById('siswaSaldo').value=sl; window.scrollTo(0,0); }
     </script>
 </body>
 </html>
