@@ -3,102 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - SD Indonesia Hebat</title>
+    <title>Pusat Kendali & Admin E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @media print {
-            body * { visibility: hidden; }
-            #areaCetak, #areaCetak * { visibility: visible; }
-            #areaCetak { position: absolute; left: 0; top: 0; width: 100%; }
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen font-sans">
-
-    <div class="bg-indigo-950 text-white p-8 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-                <h1 class="text-3xl font-black uppercase italic tracking-tighter">Monitoring Siswa 🛡️</h1>
-                <p class="text-xs font-bold text-yellow-400 uppercase tracking-widest mt-2">Pusat Kendali E-Kantin - SD Indonesia Hebat</p>
-            </div>
-            <div class="flex gap-4">
-                <a href="manajemen-menu.html" class="bg-emerald-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg">🍱 Stok Menu</a>
-                <a href="index.html" class="bg-red-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg">🚪 Keluar</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="max-w-7xl mx-auto p-4 md:p-8 -mt-10">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-8 rounded-[3rem] shadow-xl border-b-4 border-indigo-500">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Dana Nasabah</p>
-                <h2 id="totalTabungan" class="text-3xl font-black text-indigo-900 mt-2 text-emerald-600">Rp 0</h2>
-            </div>
-            <div class="lg:col-span-2 bg-white p-6 rounded-[3rem] shadow-xl overflow-hidden">
-                <canvas id="chartTransaksi" height="80"></canvas>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white p-8 rounded-[3.5rem] shadow-xl border border-indigo-50">
-                    <h3 class="text-xs font-black text-indigo-900 mb-6 uppercase italic">Registrasi & Top Up</h3>
-                    <div class="space-y-4">
-                        <input type="text" id="siswaID" placeholder="ID KARTU" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-4 ring-indigo-500">
-                        <input type="text" id="siswaNama" placeholder="NAMA SISWA" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-4 ring-indigo-500 uppercase">
-                        <input type="text" id="siswaKelas" placeholder="KELAS" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-4 ring-indigo-500 uppercase">
-                        <input type="number" id="siswaSaldo" placeholder="SALDO (RP)" class="w-full p-4 bg-emerald-50 text-emerald-700 rounded-2xl font-black text-xs outline-none">
-                        <button onclick="simpanSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 uppercase text-[10px] tracking-widest">Simpan & Update</button>
-                    </div>
-                </div>
-
-                <div class="bg-indigo-900 p-8 rounded-[3rem] shadow-xl text-white">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black uppercase">Log Aktivitas</h3>
-                        <button onclick="resetLog()" class="text-[8px] text-red-300 font-bold uppercase underline">Reset Log</button>
-                    </div>
-                    <div id="logArea" class="space-y-2 h-48 overflow-y-auto text-[10px] font-mono">
-                        </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-3">
-                <div class="bg-white rounded-[3.5rem] shadow-xl overflow-hidden border border-slate-50">
-                    <div class="p-8 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
-                        <h3 class="text-xs font-black text-slate-500 uppercase">Daftar Nasabah</h3>
-                        <div class="flex gap-2">
-                            <input type="text" id="cariSiswa" onkeyup="filterSiswa()" placeholder="Cari Nama..." class="p-3 bg-white rounded-xl text-[10px] font-bold border border-slate-200 outline-none">
-                            <input type="text" id="filterKelas" onkeyup="filterSiswa()" placeholder="Filter Kelas..." class="p-3 bg-white rounded-xl text-[10px] font-bold border border-slate-200 outline-none w-24">
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table id="tabelSiswa" class="w-full text-left">
-                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase">
-                                <tr>
-                                    <th class="p-6">ID</th><th class="p-6">Nama</th><th class="p-6">Kelas</th><th class="p-6 text-right">Saldo</th><th class="p-6 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listSiswa" class="text-xs font-bold text-slate-600 divide-y divide-slate-50"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="areaCetak" class="hidden">
-        <div style="width:300px; border:2px solid #000; padding:20px; text-align:center; border-radius:15px;">
-            <h3 style="margin:0">KARTU E-KANTIN</h3>
-            <p style="font-size:10px">SD INDONESIA HEBAT</p>
-            <div id="printID" style="font-size:18px; font-weight:bold; margin:15px 0; border:1px dashed #000; padding:10px;"></div>
-            <p id="printNama" style="text-transform:uppercase; font-weight:bold;"></p>
-        </div>
-    </div>
-
+<body class="bg-slate-100 p-2 md:p-6 font-sans">
     <script>
+        // CONFIG FIREBASE BAPAK
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -110,73 +26,84 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
+        let myChart = null;
 
-        // 1. MONITORING REAL-TIME
-        db.ref('kantin_users').on('value', snap => {
-            const list = document.getElementById('listSiswa');
-            list.innerHTML = "";
-            let total = 0;
-            snap.forEach(child => {
-                const s = child.val();
-                total += s.saldo;
-                list.innerHTML += `
-                    <tr>
-                        <td class="p-6 font-mono">${child.key}</td>
-                        <td class="p-6 uppercase">${s.nama}</td>
-                        <td class="p-6">${s.kelas || '-'}</td>
-                        <td class="p-6 text-right font-black text-emerald-600 italic">Rp ${s.saldo.toLocaleString()}</td>
-                        <td class="p-6 text-center flex gap-2 justify-center">
-                            <button onclick="editSiswa('${child.key}','${s.nama}','${s.kelas}',${s.saldo})" class="text-indigo-600">✏️</button>
-                            <button onclick="cetakKartu('${child.key}','${s.nama}')" class="text-yellow-600">🖨️</button>
-                            <button onclick="hapusSiswa('${child.key}')" class="text-red-400">🗑️</button>
-                        </td>
-                    </tr>`;
+        auth.onAuthStateChanged(user => { if(!user) window.location.href="login.html"; });
+
+        // FUNGSI LOAD DATA (DI SINI SAYA INTEGRASIKAN LAPORAN BULANAN)
+        function loadData() {
+            const filterTgl = document.getElementById('filterTanggal').value; // Contoh: 2024-05-30
+            const filterKls = document.getElementById('filterKelas').value;
+            
+            // 1. DAFTAR SISWA (Fungsi Asli Bapak)
+            db.ref('kantin_users').on('value', snap => {
+                const cont = document.getElementById('siswaList'); cont.innerHTML = "";
+                snap.forEach(s => {
+                    const d = s.val();
+                    if(filterKls === "SEMUA" || d.kelas === filterKls) {
+                        cont.innerHTML += `
+                            <div class="p-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
+                                <div>
+                                    <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas || 'N/A'}</span>
+                                    <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
+                                    <p class="text-[9px] font-bold text-emerald-600 mt-1">Rp ${d.saldo.toLocaleString()}</p>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo})" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black">EDIT</button>
+                                    <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-100 text-red-500 rounded-lg text-[8px] font-black">×</button>
+                                </div>
+                            </div>`;
+                    }
+                });
             });
-            document.getElementById('totalTabungan').innerText = "Rp " + total.toLocaleString();
-        });
 
-        // 2. LOG AKTIVITAS & GRAFIK
-        db.ref('kantin_transaksi').limitToLast(15).on('value', snap => {
-            const log = document.getElementById('logArea');
-            log.innerHTML = "";
-            snap.forEach(child => {
-                const t = child.val();
-                log.innerHTML = `<div>> ${t.nama_siswa} - Rp ${t.total.toLocaleString()}</div>` + log.innerHTML;
+            // 2. LOG & LAPORAN (LOGIKA LAPORAN BULANAN OTOMATIS)
+            db.ref('kantin_laporan').on('value', snap => {
+                const body = document.getElementById('logTableBody'); body.innerHTML = "";
+                let totalSmua = 0; 
+                let stanGrup = {};
+                
+                // Ambil Bulan-Tahun dari filter tanggal (jika ada)
+                const filterBulan = filterTgl ? filterTgl.substring(0, 7) : ""; // Hasil: "2024-05"
+
+                snap.forEach(l => {
+                    const d = l.val();
+                    // Konversi waktu Firebase ke format YYYY-MM-DD
+                    const tglData = d.waktu.split(',')[0].split('/').reverse().join('-'); 
+                    const bulanData = tglData.substring(0, 7);
+
+                    // LOGIKA FILTER:
+                    // Jika tanggal dipilih -> Tampilkan harian
+                    // Jika tanggal kosong -> Tampilkan semua transaksi bulan ini
+                    let lolosFilter = false;
+                    if (!filterTgl) {
+                        // Jika filter tanggal kosong, tampilkan transaksi bulan berjalan
+                        const bulanSekarang = new Date().toISOString().substring(0, 7);
+                        if (bulanData === bulanSekarang) lolosFilter = true;
+                    } else if (tglData === filterTgl) {
+                        lolosFilter = true;
+                    }
+
+                    if(lolosFilter) {
+                        totalSmua += d.total;
+                        stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
+                        body.innerHTML = `<tr><td class="p-3 text-slate-400 italic font-normal">${d.waktu}</td><td>${d.namaSiswa}</td><td><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full uppercase">${d.stan}</span></td><td>${d.item}</td><td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td></tr>` + body.innerHTML;
+                    }
+                });
+
+                document.getElementById('totalOmzet').innerText = "Rp " + totalSmua.toLocaleString();
+                const breakEl = document.getElementById('breakdownStan'); breakEl.innerHTML = "";
+                Object.keys(stanGrup).forEach(s => { 
+                    breakEl.innerHTML += `<div class="flex justify-between border-b border-slate-50"><span>${s}</span><span>Rp ${stanGrup[s].toLocaleString()}</span></div>`; 
+                });
+                updateChart(stanGrup);
             });
-        });
-
-        // 3. FUNGSI UTAMA
-        function simpanSiswa() {
-            const id = document.getElementById('siswaID').value;
-            const nm = document.getElementById('siswaNama').value.toUpperCase();
-            const kl = document.getElementById('siswaKelas').value.toUpperCase();
-            const sl = parseInt(document.getElementById('siswaSaldo').value) || 0;
-            if(id && nm) db.ref('kantin_users/'+id).set({nama:nm, kelas:kl, saldo:sl}).then(() => alert("Berhasil!"));
         }
 
-        function filterSiswa() {
-            const nama = document.getElementById('cariSiswa').value.toUpperCase();
-            const kelas = document.getElementById('filterKelas').value.toUpperCase();
-            const tr = document.getElementById('tabelSiswa').getElementsByTagName('tr');
-            for(let i=1; i<tr.length; i++) {
-                const tdNama = tr[i].cells[1].innerText;
-                const tdKelas = tr[i].cells[2].innerText;
-                tr[i].style.display = (tdNama.includes(nama) && tdKelas.includes(kelas)) ? "" : "none";
-            }
-        }
-
-        function cetakKartu(id, nm) {
-            document.getElementById('printID').innerText = id;
-            document.getElementById('printNama').innerText = nm;
-            window.print();
-        }
-
-        function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users/'+id).remove(); }
-        function editSiswa(id, nm, kl, sl) {
-            document.getElementById('siswaID').value=id; document.getElementById('siswaNama').value=nm;
-            document.getElementById('siswaKelas').value=kl; document.getElementById('siswaSaldo').value=sl;
-        }
-        function resetLog() { if(confirm("Reset Log?")) db.ref('kantin_transaksi').remove(); }
+        // SEMUA FUNGSI LAIN (updateSiswa, cetakKolektif, updateChart, dll) 
+        // TETAP GUNAKAN MILIK BAPAK TANPA PERUBAHAN
+        // ... (copy paste dari kode Bapak di atas) ...
     </script>
 </body>
 </html>
