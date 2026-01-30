@@ -3,41 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Saldo Siswa</title>
+    <title>E-Kantin Indonesia Hebat</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <style>
+        .hidden { display: none !important; }
+        .animate-pop { animation: pop 0.3s ease-out; }
+        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
 </head>
-<body class="bg-indigo-900 min-h-screen flex items-center justify-center p-4">
+<body class="bg-indigo-950 font-sans min-h-screen">
 
-    <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-6 text-center">
-        <h1 class="text-2xl font-black text-indigo-900 mb-2 italic">SELF-SERVICE 📱</h1>
-        <p class="text-xs font-bold text-slate-400 uppercase mb-6">Cek Saldo & Riwayat Belanja</p>
+    <div id="sec_login_portal" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-indigo-950">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-yellow-400 animate-pop">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">🔐</div>
+                <h2 class="text-xl font-black text-indigo-900 uppercase italic leading-none">Akses Portal</h2>
+                <p class="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-2 italic">Petugas Kantin</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="p_user" placeholder="Username" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-indigo-500 text-sm">
+                <input type="password" id="p_pass" placeholder="Password" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-indigo-500 text-sm">
+                <button onclick="loginPortal()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Masuk Portal 🚀</button>
+                <button onclick="bukaSelfService()" class="w-full bg-emerald-50 text-emerald-600 font-black p-4 rounded-2xl text-[10px] uppercase border-2 border-emerald-100 mt-4 italic">🔍 Cek Saldo Siswa</button>
+            </div>
+        </div>
+    </div>
 
-        <div id="areaScanner" class="space-y-4">
-            <div id="reader" class="rounded-2xl overflow-hidden border-4 border-dashed border-indigo-100"></div>
-            <button onclick="mulaiScan()" id="btnScan" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all">
-                MULAI SCAN KARTU 📸
-            </button>
+    <div id="sec_login_panel" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-emerald-500 animate-pop">
+            <div class="text-center mb-6">
+                <div class="bg-emerald-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl">📊</div>
+                <h2 class="text-xl font-black text-indigo-900 uppercase italic">Admin Only</h2>
+                <p class="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-2">Owner Verification</p>
+            </div>
+            <div class="space-y-3">
+                <input type="email" id="adm_email" placeholder="Email Admin" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500 text-xs">
+                <input type="password" id="adm_pass" placeholder="Password Khusus" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500 text-xs">
+                <button onclick="loginPanelAdmin()" class="w-full bg-emerald-600 text-white font-black p-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase text-[10px]">Verifikasi Owner ✅</button>
+                <button onclick="tutupLoginPanel()" class="w-full text-slate-400 text-[9px] font-bold uppercase mt-2 italic underline">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec_dashboard" class="hidden min-h-screen pb-10">
+        <div class="bg-white p-10 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400 mb-8 text-center relative">
+            <button onclick="location.reload()" class="absolute top-8 right-8 text-[8px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Logout</button>
+            <h1 class="text-3xl font-black italic uppercase leading-none mt-4 text-indigo-900">MAIN PORTAL</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mt-2 italic tracking-[0.2em]">Indonesia Hebat Digital</p>
         </div>
 
-        <div id="hasilCek" class="hidden space-y-6">
-            <div class="bg-indigo-50 p-6 rounded-[2rem] border-2 border-indigo-100">
-                <p class="text-[10px] font-black text-indigo-400 uppercase italic">Nama Siswa:</p>
-                <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase">-</h2>
-                <div class="my-4 border-t border-indigo-200"></div>
-                <p class="text-[10px] font-black text-indigo-400 uppercase italic">Sisa Saldo:</p>
-                <h2 id="saldoSiswa" class="text-3xl font-black text-emerald-600">Rp 0</h2>
-            </div>
+        <div class="max-w-md mx-auto px-6 space-y-4">
+            <a href="kasir.html" class="flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-orange-500 active:scale-90 transition-all">
+                <div class="text-2xl">🛒</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic">Kasir</h3><p class="text-[8px] font-bold text-slate-400 italic">Transaksi & Penjualan</p></div>
+            </a>
+            <a href="manajemen-menu.html" class="flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-indigo-600 active:scale-90 transition-all">
+                <div class="text-2xl">📋</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic">Menu</h3><p class="text-[8px] font-bold text-slate-400 italic">Stok & Harga</p></div>
+            </a>
+            <button onclick="mintaAksesPanel()" class="w-full flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-emerald-500 active:scale-90 transition-all text-left">
+                <div class="text-2xl">📊</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic">Panel Admin</h3><p class="text-[8px] font-bold text-slate-400 italic">Laporan Keuangan Khusus</p></div>
+            </button>
+        </div>
+    </div>
 
-            <div class="text-left">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-3 px-2 italic">Riwayat 3 Belanja Terakhir:</h3>
-                <div id="listRiwayat" class="space-y-2">
-                    </div>
+    <div id="sec_self_service" class="hidden fixed inset-0 z-[110] flex flex-col items-center p-6 bg-indigo-950 overflow-y-auto">
+        <div class="bg-white w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center">
+            <h2 class="font-black text-indigo-900 uppercase italic mb-6">Cek Saldo Hero</h2>
+            <div id="reader" class="rounded-3xl overflow-hidden border-4 border-dashed border-indigo-100 mb-6 bg-slate-50"></div>
+            <button id="btn_scan" onclick="startScanner()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl text-[10px] shadow-lg mb-4 uppercase italic">📸 Klik Untuk Scan Kartu</button>
+            <div id="hasil_siswa" class="hidden bg-indigo-50 p-6 rounded-[2rem] border-2 border-indigo-100 mb-4 animate-pop">
+                <h3 id="h_nama" class="text-lg font-black text-indigo-900 uppercase">-</h3>
+                <h2 id="h_saldo" class="text-3xl font-black text-emerald-600 mt-2">Rp 0</h2>
+                <hr class="my-4">
+                <div id="h_riwayat" class="space-y-2 text-[9px] text-left"></div>
             </div>
-
-            <button onclick="location.reload()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl text-xs uppercase">Tutup & Cek Lainnya</button>
+            <button onclick="location.reload()" class="w-full text-slate-400 font-bold text-[9px] uppercase mt-4 underline italic">Kembali</button>
         </div>
     </div>
 
@@ -54,55 +101,64 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let html5QrCode;
-
-        function mulaiScan() {
-            document.getElementById('btnScan').classList.add('hidden');
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
-                html5QrCode.stop();
-                cariDataSiswa(decodedText.trim());
-            });
+        // LOGIN 1: PORTAL
+        function loginPortal() {
+            const u = document.getElementById('p_user').value.trim().toLowerCase();
+            const p = document.getElementById('p_pass').value.trim();
+            if (u === "admin" && p === "admin123") {
+                document.getElementById('sec_login_portal').classList.add('hidden');
+                document.getElementById('sec_dashboard').classList.remove('hidden');
+            } else { alert("User/Pass Portal Salah!"); }
         }
 
-        function cariDataSiswa(id) {
-            // 1. Ambil Data Profil & Saldo
-            db.ref('kantin_users/' + id).once('value', (snapshot) => {
-                const user = snapshot.val();
-                if (!user) {
-                    alert("ID Kartu tidak terdaftar!");
-                    location.reload();
-                    return;
-                }
+        // LOGIN 2: PANEL ADMIN
+        function mintaAksesPanel() { document.getElementById('sec_login_panel').classList.remove('hidden'); }
+        function tutupLoginPanel() { document.getElementById('sec_login_panel').classList.add('hidden'); }
 
-                document.getElementById('areaScanner').classList.add('hidden');
-                document.getElementById('hasilCek').classList.remove('hidden');
-                document.getElementById('namaSiswa').innerText = user.nama;
-                document.getElementById('saldoSiswa').innerText = "Rp " + user.saldo.toLocaleString();
+        function loginPanelAdmin() {
+            const e = document.getElementById('adm_email').value.trim();
+            const p = document.getElementById('adm_pass').value.trim();
+            
+            // Verifikasi Akun Pak Kiswanto
+            if (e === "kiswanto73@guru.sd.belajar.is" && p === "Kis7384@") {
+                alert("Verifikasi Berhasil! Membuka Laporan...");
+                window.location.href = "dashboard-kantin.html";
+            } else {
+                alert("Email/Password Admin Owner Salah!");
+            }
+        }
 
-                // 2. Ambil Riwayat Belanja (3 Terakhir)
-                db.ref('kantin_laporan').orderByChild('idSiswa').equalTo(id).limitToLast(3).once('value', (snap) => {
-                    const list = document.getElementById('listRiwayat');
-                    list.innerHTML = "";
-                    
-                    let riwayatArr = [];
-                    snap.forEach(c => riwayatArr.push(c.val()));
-                    
-                    if(riwayatArr.length === 0) {
-                        list.innerHTML = `<p class="text-[10px] text-slate-400 text-center italic">Belum ada riwayat belanja</p>`;
-                    } else {
-                        riwayatArr.reverse().forEach(data => {
-                            list.innerHTML += `
-                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    <p class="text-[10px] text-indigo-600 font-bold uppercase">${data.item}</p>
-                                    <div class="flex justify-between text-[9px] text-slate-400 font-bold mt-1">
-                                        <span>${data.waktu.split(',')[0]}</span>
-                                        <span class="text-orange-600">-Rp ${data.total.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
+        // SELF SERVICE LOGIC
+        function bukaSelfService() {
+            document.getElementById('sec_login_portal').classList.add('hidden');
+            document.getElementById('sec_self_service').classList.remove('hidden');
+        }
+
+        let qrcode;
+        function startScanner() {
+            document.getElementById('btn_scan').classList.add('hidden');
+            qrcode = new Html5Qrcode("reader");
+            qrcode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+                qrcode.stop();
+                prosesDataSiswa(txt.trim());
+            }).catch(err => alert("Kamera error/ditolak!"));
+        }
+
+        function prosesDataSiswa(id) {
+            db.ref('kantin_users/' + id).once('value', snap => {
+                const d = snap.val();
+                if(!d) { alert("ID Tidak Ada!"); location.reload(); return; }
+                document.getElementById('hasil_siswa').classList.remove('hidden');
+                document.getElementById('h_nama').innerText = d.nama;
+                document.getElementById('h_saldo').innerText = "Rp " + d.saldo.toLocaleString();
+                
+                db.ref('kantin_laporan').orderByChild('idSiswa').equalTo(id).limitToLast(3).once('value', rSnap => {
+                    const list = document.getElementById('h_riwayat');
+                    list.innerHTML = "<p class='font-black uppercase mb-1'>3 Riwayat Belanja:</p>";
+                    rSnap.forEach(c => {
+                        const v = c.val();
+                        list.innerHTML += `<div class="bg-white p-2 rounded-lg border flex justify-between"><span>${v.item}</span><span class="text-red-500">-${v.total}</span></div>`;
+                    });
                 });
             });
         }
