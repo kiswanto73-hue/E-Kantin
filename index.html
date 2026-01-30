@@ -14,31 +14,75 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-slate-100 font-sans min-h-screen pb-20">
+<body class="bg-indigo-950 font-sans min-h-screen">
 
-    <div class="bg-indigo-950 text-white p-8 rounded-b-[3rem] shadow-2xl border-b-8 border-yellow-400 mb-6 text-center">
-        <h1 class="text-3xl font-black italic tracking-tighter uppercase">E-Kantin 🥤</h1>
-        <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em] mt-2">Indonesia Hebat Digital System</p>
+    <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-indigo-950">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-yellow-400">
+            <div class="text-center mb-8">
+                <div class="bg-indigo-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl">🔐</div>
+                <h2 class="text-2xl font-black text-indigo-900 uppercase italic">Portal Admin</h2>
+                <p class="text-[10px] font-bold text-slate-400 tracking-widest uppercase">E-Kantin Indonesia Hebat</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="userAdmin" placeholder="Username" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-2 ring-indigo-500">
+                <input type="password" id="passAdmin" placeholder="Password" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-2 ring-indigo-500">
+                <button onclick="cekLogin()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs">Buka Akses 🚀</button>
+                <button onclick="bukaCekSaldo()" class="w-full bg-slate-100 text-slate-500 font-bold p-3 rounded-2xl text-[10px] uppercase mt-2">Atau Cek Saldo Siswa</button>
+            </div>
+        </div>
     </div>
 
-    <div class="max-w-md mx-auto px-4 space-y-4">
-        <a href="manajemen-menu.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-indigo-600 hover:scale-95 transition-all">
-            <h3 class="font-black text-indigo-900 uppercase italic">📋 Manajemen Menu</h3>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">Atur Stok & Harga</p>
-        </a>
-        
-        <a href="dashboard-kantin.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-emerald-500 hover:scale-95 transition-all">
-            <h3 class="font-black text-indigo-900 uppercase italic">📊 Laporan Penjualan</h3>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">Pantau Pendapatan Real-time</p>
-        </a>
+    <div id="cekSaldoSection" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-emerald-500">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl">
+            <h2 class="text-center font-black text-indigo-900 uppercase italic mb-6">💰 Cek Saldo Hero</h2>
+            <input type="text" id="inputNamaSaldo" placeholder="Masukkan Nama Siswa..." class="w-full p-4 bg-slate-100 rounded-2xl font-black text-center outline-none border-2 border-transparent focus:border-emerald-500 mb-4 uppercase">
+            <button onclick="prosesCekSaldo()" class="w-full bg-emerald-600 text-white font-black p-4 rounded-2xl shadow-lg uppercase text-xs mb-4">Lihat Saldo</button>
+            
+            <div id="hasilSaldo" class="hidden bg-indigo-50 p-6 rounded-3xl text-center border-2 border-dashed border-indigo-200">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase">Saldo Anda Saat Ini:</p>
+                <h3 id="txtSaldo" class="text-3xl font-black text-indigo-900 mt-1">Rp 0</h3>
+            </div>
+            
+            <button onclick="kembaliKeLogin()" class="w-full text-slate-400 font-bold text-[10px] uppercase mt-6 tracking-widest"> Kembali </button>
+        </div>
     </div>
 
-    <div class="fixed bottom-6 left-0 right-0 text-center">
-        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">V.1.0 - App Ready for Playstore</p>
+    <div id="mainDashboard" class="hidden pb-10">
+        <div class="bg-white text-indigo-900 p-8 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400 mb-8 text-center relative">
+            <button onclick="logout()" class="absolute top-8 right-8 text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Logout</button>
+            <h1 class="text-4xl font-black italic tracking-tighter uppercase leading-none">E-Kantin 🍱</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-3 italic">Control Center Indonesia Hebat</p>
+        </div>
+
+        <div class="max-w-md mx-auto px-6 space-y-4">
+            <a href="manajemen-menu.html" class="group block bg-white p-6 rounded-[2.5rem] shadow-xl hover:bg-indigo-600 transition-all duration-300">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-100 group-hover:bg-white/20 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all">📋</div>
+                    <div>
+                        <h3 class="font-black text-indigo-900 group-hover:text-white uppercase italic leading-none text-lg">Manajemen Menu</h3>
+                        <p class="text-[9px] text-slate-400 group-hover:text-indigo-100 font-bold uppercase mt-1">Update Harga & Audit Stok</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="dashboard-kantin.html" class="group block bg-white p-6 rounded-[2.5rem] shadow-xl hover:bg-emerald-500 transition-all duration-300">
+                <div class="flex items-center gap-4">
+                    <div class="bg-emerald-100 group-hover:bg-white/20 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all">📊</div>
+                    <div>
+                        <h3 class="font-black text-indigo-900 group-hover:text-white uppercase italic leading-none text-lg">Laporan Jual</h3>
+                        <p class="text-[9px] text-slate-400 group-hover:text-emerald-50 font-bold uppercase mt-1">Pantau Omzet & Laba</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-[9px] font-black text-indigo-400 uppercase tracking-[0.5em] italic opacity-50">V.1.0 Premium System</p>
+        </div>
     </div>
 
     <script>
-        // KONFIGURASI FIREBASE (Ganti dengan config Bapak jika berbeda)
+        // CONFIG FIREBASE BAPAK
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -49,13 +93,55 @@
             appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
         };
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // PENDAFTARAN SERVICE WORKER (AGAR BISA JADI APLIKASI)
+        // FUNGSI LOGIN
+        function cekLogin() {
+            const u = document.getElementById('userAdmin').value;
+            const p = document.getElementById('passAdmin').value;
+            if (u === "admin" && p === "admin123") {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+            } else {
+                alert("Akses Ditolak!");
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        // FUNGSI CEK SALDO
+        function bukaCekSaldo() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('cekSaldoSection').classList.remove('hidden');
+        }
+
+        function kembaliKeLogin() {
+            document.getElementById('cekSaldoSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+
+        function prosesCekSaldo() {
+            const nama = document.getElementById('inputNamaSaldo').value.trim().toUpperCase();
+            if(!nama) return alert("Masukkan Nama!");
+
+            // Asumsi data saldo ada di tabel 'saldo_siswa' (sesuaikan dengan db bapak nanti)
+            db.ref('saldo_siswa/' + nama).once('value', snap => {
+                const hasil = document.getElementById('hasilSaldo');
+                const txt = document.getElementById('txtSaldo');
+                hasil.classList.remove('hidden');
+                
+                if(snap.exists()){
+                    txt.innerText = "Rp " + snap.val().saldo.toLocaleString();
+                } else {
+                    txt.innerText = "Data Kosong";
+                }
+            });
+        }
+
+        // PWA REGISTER
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Aplikasi E-Kantin Siap!'))
-                    .catch(err => console.log('Pendaftaran Gagal', err));
+                navigator.serviceWorker.register('sw.js');
             });
         }
     </script>
