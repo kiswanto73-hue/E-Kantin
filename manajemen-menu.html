@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Menu & Stok Final</title>
+    <title>Manajemen Menu & Stok Audit - Cantik & Keren</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,38 +11,44 @@
 <body class="bg-slate-100 p-4 min-h-screen font-sans">
 
     <div class="max-w-xl mx-auto">
-        <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 flex justify-between items-center border-b-4 border-emerald-400">
+        <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 flex justify-between items-center border-b-8 border-emerald-400">
             <div>
-                <h1 class="text-xl font-black italic tracking-tighter">MANAJEMEN MENU 📋</h1>
-                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Atur Harga & Stok Kantin</p>
+                <h1 class="text-xl font-black italic tracking-tighter uppercase leading-none">Manajemen Menu 📋</h1>
+                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Audit Stok Awal & Akhir Real-Time</p>
             </div>
-            <a href="dashboard-kantin.html" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-2xl text-[10px] font-black uppercase transition-all">Dashboard</a>
+            <a href="dashboard-kantin.html" class="bg-white/10 hover:bg-white/20 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border border-white/10">Dashboard</a>
         </div>
 
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm mb-8 border border-indigo-50">
-            <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic">Tambah / Update Menu</h3>
-            <div class="space-y-3">
-                <select id="selectStan" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs border-2 border-transparent focus:border-indigo-500 outline-none transition-all">
-                    <option value="STAN MAKANAN">STAN MAKANAN</option>
-                    <option value="STAN MINUMAN">STAN MINUMAN</option>
-                    <option value="STAN SNACK">STAN SNACK</option>
+            <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic flex items-center gap-2">
+                <span class="bg-indigo-100 p-1 px-2 rounded-lg">✨</span> Update Menu & Kendali Stok
+            </h3>
+            <div class="space-y-4">
+                <select id="selectStan" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-indigo-900">
+                    <option value="STAN MAKANAN">🍱 STAN MAKANAN</option>
+                    <option value="STAN MINUMAN">🥤 STAN MINUMAN</option>
+                    <option value="STAN SNACK">🍪 STAN SNACK</option>
                 </select>
                 
-                <input type="text" id="namaMenu" placeholder="Nama Menu (Contoh: Nasi Goreng)" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
+                <input type="text" id="namaMenu" placeholder="NAMA MENU (MISAL: TEH TARIK)" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs outline-none focus:ring-2 ring-indigo-500 uppercase">
                 
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="text-[8px] font-black text-slate-400 ml-2 uppercase">Harga (Rp)</label>
-                        <input type="number" id="hargaMenu" placeholder="Contoh: 10000" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-emerald-500">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="space-y-1 text-center">
+                        <label class="text-[8px] font-black text-slate-400 uppercase">Harga (Rp)</label>
+                        <input type="number" id="hargaMenu" placeholder="10000" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-emerald-500">
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-[8px] font-black text-slate-400 ml-2 uppercase">Jumlah Stok</label>
-                        <input type="number" id="stokMenu" placeholder="Contoh: 50" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-orange-500">
+                    <div class="space-y-1 text-center">
+                        <label class="text-[8px] font-black text-emerald-500 uppercase">Awal (Pagi)</label>
+                        <input type="number" id="stokAwal" placeholder="50" class="w-full p-4 bg-emerald-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-emerald-500 text-emerald-700">
+                    </div>
+                    <div class="space-y-1 text-center">
+                        <label class="text-[8px] font-black text-red-500 uppercase">Akhir (Sore)</label>
+                        <input type="number" id="stokAkhir" placeholder="5" class="w-full p-4 bg-red-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-red-500 text-red-700">
                     </div>
                 </div>
 
-                <button onclick="simpanMenu()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all uppercase text-xs tracking-widest mt-2">
-                    Simpan ke Database 🚀
+                <button onclick="simpanMenu()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all uppercase text-[10px] tracking-[0.2em]">
+                    Simpan Ke Database 🚀
                 </button>
             </div>
         </div>
@@ -52,7 +58,7 @@
     </div>
 
     <script>
-        // Konfigurasi Firebase Bapak
+        // Gunakan Config Firebase Bapak
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -65,40 +71,39 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. Fungsi Simpan atau Update Menu
         function simpanMenu() {
             const stan = document.getElementById('selectStan').value;
             const nama = document.getElementById('namaMenu').value.trim().toUpperCase();
             const harga = parseInt(document.getElementById('hargaMenu').value);
-            const stok = parseInt(document.getElementById('stokMenu').value) || 0;
+            const awal = parseInt(document.getElementById('stokAwal').value) || 0;
+            const akhir = parseInt(document.getElementById('stokAkhir').value) || 0;
 
             if (nama && harga) {
-                // Buat ID unik berdasarkan Nama agar tidak double
                 const menuId = nama.replace(/\s+/g, '_');
-                
                 db.ref('kantin_menus/' + stan + '/' + menuId).set({
                     nama: nama,
                     harga: harga,
-                    stok: stok
+                    stok_awal: awal,
+                    stok_akhir: akhir,
+                    terjual: (awal - akhir) < 0 ? 0 : (awal - akhir)
                 }).then(() => {
-                    alert("✅ Berhasil: " + nama + " telah diperbarui!");
-                    // Reset input
+                    alert("✅ " + nama + " BERHASIL DIUPDATE!");
                     document.getElementById('namaMenu').value = "";
                     document.getElementById('hargaMenu').value = "";
-                    document.getElementById('stokMenu').value = "";
+                    document.getElementById('stokAwal').value = "";
+                    document.getElementById('stokAkhir').value = "";
                 });
             } else {
-                alert("Mohon isi Nama Menu dan Harga!");
+                alert("MOHON ISI NAMA DAN HARGA!");
             }
         }
 
-        // 2. Tampilkan Menu secara Real-time
         db.ref('kantin_menus').on('value', snapshot => {
             const container = document.getElementById('displayMenu');
             container.innerHTML = "";
 
             if(!snapshot.exists()) {
-                container.innerHTML = "<p class='text-center text-slate-400 italic text-xs py-10'>Belum ada menu. Silakan tambah menu baru di atas.</p>";
+                container.innerHTML = "<p class='text-center text-slate-400 italic text-xs py-10'>Belum ada data stok.</p>";
                 return;
             }
 
@@ -106,36 +111,43 @@
                 const namaStan = stanSnap.key;
                 let htmlStan = `
                     <div class="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100">
-                        <div class="bg-slate-50 px-6 py-3 border-b border-slate-100 flex justify-between items-center">
+                        <div class="bg-indigo-50/50 px-6 py-4 flex justify-between items-center border-b border-indigo-50">
                             <h3 class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">${namaStan}</h3>
                         </div>
                         <div class="divide-y divide-slate-50">
                 `;
 
                 stanSnap.forEach(menuSnap => {
-                    const menu = menuSnap.val();
+                    const m = menuSnap.val();
                     const mId = menuSnap.key;
-                    const stok = menu.stok || 0;
                     
-                    // Warna stok: Merah jika < 10, Hijau jika banyak
-                    const warnaStok = stok < 10 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50';
-
                     htmlStan += `
-                        <div class="flex justify-between items-center p-4 hover:bg-slate-50 transition-all">
-                            <div class="flex-1">
-                                <p class="text-xs font-black text-slate-800 uppercase leading-none mb-1">${menu.nama}</p>
-                                <p class="text-[10px] font-bold text-slate-400">Rp ${menu.harga.toLocaleString()}</p>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="text-right mr-2">
-                                    <p class="text-[7px] font-black text-slate-300 uppercase leading-none">Sisa Stok</p>
-                                    <span class="text-[11px] font-black px-2 py-0.5 rounded-full ${warnaStok}">${stok}</span>
+                        <div class="p-5 hover:bg-slate-50/50 transition-all">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex-1">
+                                    <p class="text-xs font-black text-slate-800 uppercase italic">${m.nama}</p>
+                                    <p class="text-[10px] font-bold text-indigo-600">Rp ${m.harga.toLocaleString()}</p>
                                 </div>
-                                <button onclick="hapusMenu('${namaStan}', '${mId}')" class="bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white p-2 rounded-xl transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
+                                <button onclick="hapusMenu('${namaStan}', '${mId}')" class="text-slate-200 hover:text-red-500 transition-all p-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <div class="flex-1 text-center">
+                                    <p class="text-[7px] font-black text-slate-400 uppercase">Awal</p>
+                                    <p class="text-[11px] font-black text-emerald-600">${m.stok_awal || 0}</p>
+                                </div>
+                                <div class="h-6 w-[1px] bg-slate-200"></div>
+                                <div class="flex-1 text-center">
+                                    <p class="text-[7px] font-black text-slate-400 uppercase">Akhir</p>
+                                    <p class="text-[11px] font-black text-red-500">${m.stok_akhir || 0}</p>
+                                </div>
+                                <div class="h-6 w-[1px] bg-slate-200"></div>
+                                <div class="flex-1 text-center bg-indigo-600 rounded-xl py-1">
+                                    <p class="text-[7px] font-black text-white/70 uppercase leading-tight">Laku</p>
+                                    <p class="text-[11px] font-black text-white leading-tight">${m.terjual || 0}</p>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -146,9 +158,8 @@
             });
         });
 
-        // 3. Fungsi Hapus Menu
         function hapusMenu(stan, id) {
-            if (confirm("Hapus menu ini dari daftar?")) {
+            if (confirm("HAPUS DATA INI?")) {
                 db.ref('kantin_menus/' + stan + '/' + id).remove();
             }
         }
