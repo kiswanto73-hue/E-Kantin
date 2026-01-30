@@ -3,92 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Kantin Indonesia Hebat</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Cek Saldo QR - E-Kantin</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    
-    <style>
-        .hidden { display: none !important; }
-        .animate-pop { animation: pop 0.3s ease-out; }
-        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-indigo-950 font-sans min-h-screen">
+<body class="bg-indigo-950 p-4 min-h-screen flex items-center justify-center font-sans">
 
-    <div id="sec_login_portal" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-indigo-950">
-        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-yellow-400 animate-pop">
-            <div class="text-center mb-6">
-                <div class="bg-indigo-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">🔐</div>
-                <h2 class="text-xl font-black text-indigo-900 uppercase italic leading-none">Akses Portal</h2>
-                <p class="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-2 italic">Petugas Kantin</p>
-            </div>
-            <div class="space-y-3">
-                <input type="text" id="p_user" placeholder="Username" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-indigo-500 text-sm">
-                <input type="password" id="p_pass" placeholder="Password" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-indigo-500 text-sm">
-                <button onclick="loginPortal()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Masuk Portal 🚀</button>
-                <button onclick="bukaSelfService()" class="w-full bg-emerald-50 text-emerald-600 font-black p-4 rounded-2xl text-[10px] uppercase border-2 border-emerald-100 mt-4 italic">🔍 Cek Saldo Siswa</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec_login_panel" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
-        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-emerald-500 animate-pop">
-            <div class="text-center mb-6">
-                <div class="bg-emerald-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl">📊</div>
-                <h2 class="text-xl font-black text-indigo-900 uppercase italic">Admin Only</h2>
-                <p class="text-[9px] font-bold text-slate-400 tracking-widest uppercase mt-2">Owner Verification</p>
-            </div>
-            <div class="space-y-3">
-                <input type="email" id="adm_email" placeholder="Email Admin" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500 text-xs">
-                <input type="password" id="adm_pass" placeholder="Password Khusus" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-emerald-500 text-xs">
-                <button onclick="loginPanelAdmin()" class="w-full bg-emerald-600 text-white font-black p-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase text-[10px]">Verifikasi Owner ✅</button>
-                <button onclick="tutupLoginPanel()" class="w-full text-slate-400 text-[9px] font-bold uppercase mt-2 italic underline">Batal</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec_dashboard" class="hidden min-h-screen pb-10">
-        <div class="bg-white p-10 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400 mb-8 text-center relative">
-            <button onclick="location.reload()" class="absolute top-8 right-8 text-[8px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Logout</button>
-            <h1 class="text-3xl font-black italic uppercase leading-none mt-4 text-indigo-900">MAIN PORTAL</h1>
-            <p class="text-[10px] font-bold text-slate-400 uppercase mt-2 italic tracking-[0.2em]">Indonesia Hebat Digital</p>
+    <div class="max-w-md w-full bg-white rounded-[3rem] p-8 shadow-2xl border-b-8 border-yellow-400">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-indigo-900 uppercase italic">Scan Kartu 💳</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Arahkan Kamera ke QR Code Siswa</p>
         </div>
 
-        <div class="max-w-md mx-auto px-6 space-y-4">
-            <a href="kasir.html" class="flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-orange-500 active:scale-90 transition-all">
-                <div class="text-2xl">🛒</div>
-                <div><h3 class="font-black text-indigo-900 uppercase italic">Kasir</h3><p class="text-[8px] font-bold text-slate-400 italic">Transaksi & Penjualan</p></div>
-            </a>
-            <a href="manajemen-menu.html" class="flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-indigo-600 active:scale-90 transition-all">
-                <div class="text-2xl">📋</div>
-                <div><h3 class="font-black text-indigo-900 uppercase italic">Menu</h3><p class="text-[8px] font-bold text-slate-400 italic">Stok & Harga</p></div>
-            </a>
-            <button onclick="mintaAksesPanel()" class="w-full flex items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-xl border-l-8 border-emerald-500 active:scale-90 transition-all text-left">
-                <div class="text-2xl">📊</div>
-                <div><h3 class="font-black text-indigo-900 uppercase italic">Panel Admin</h3><p class="text-[8px] font-bold text-slate-400 italic">Laporan Keuangan Khusus</p></div>
+        <div id="reader" class="overflow-hidden rounded-3xl bg-slate-100 border-4 border-dashed border-slate-200 mb-6"></div>
+
+        <div class="space-y-4">
+            <input type="text" id="inputID" placeholder="ID KARTU MANUAL" 
+                class="w-full p-4 bg-slate-50 rounded-2xl font-black text-center text-sm outline-none focus:ring-4 ring-indigo-500 transition-all uppercase">
+            
+            <button onclick="prosesCekSaldo(document.getElementById('inputID').value)" 
+                class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 transition-all uppercase text-xs">
+                Cek Manual 🔍
             </button>
-        </div>
-    </div>
 
-    <div id="sec_self_service" class="hidden fixed inset-0 z-[110] flex flex-col items-center p-6 bg-indigo-950 overflow-y-auto">
-        <div class="bg-white w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center">
-            <h2 class="font-black text-indigo-900 uppercase italic mb-6">Cek Saldo Hero</h2>
-            <div id="reader" class="rounded-3xl overflow-hidden border-4 border-dashed border-indigo-100 mb-6 bg-slate-50"></div>
-            <button id="btn_scan" onclick="startScanner()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl text-[10px] shadow-lg mb-4 uppercase italic">📸 Klik Untuk Scan Kartu</button>
-            <div id="hasil_siswa" class="hidden bg-indigo-50 p-6 rounded-[2rem] border-2 border-indigo-100 mb-4 animate-pop">
-                <h3 id="h_nama" class="text-lg font-black text-indigo-900 uppercase">-</h3>
-                <h2 id="h_saldo" class="text-3xl font-black text-emerald-600 mt-2">Rp 0</h2>
-                <hr class="my-4">
-                <div id="h_riwayat" class="space-y-2 text-[9px] text-left"></div>
+            <div id="hasilCek" class="hidden mt-6 p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 text-center animate-bounce-short">
+                <p id="resNama" class="text-lg font-black text-indigo-900 uppercase leading-none"></p>
+                <p id="resKelas" class="text-[10px] font-bold text-slate-400 uppercase mt-1"></p>
+                <div class="my-4 h-[1px] bg-emerald-200"></div>
+                <p class="text-[9px] font-black text-emerald-600 uppercase">Sisa Saldo:</p>
+                <p id="resSaldo" class="text-4xl font-black text-emerald-700 tracking-tighter"></p>
             </div>
-            <button onclick="location.reload()" class="w-full text-slate-400 font-bold text-[9px] uppercase mt-4 underline italic">Kembali</button>
         </div>
+
+        <a href="index.html" class="block text-center mt-8 text-[10px] font-black text-slate-400 uppercase hover:text-indigo-600"> Kembali ke Portal 🏠</a>
     </div>
 
     <script>
+        // CONFIG FIREBASE BAPAK
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -101,67 +54,53 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // LOGIN 1: PORTAL
-        function loginPortal() {
-            const u = document.getElementById('p_user').value.trim().toLowerCase();
-            const p = document.getElementById('p_pass').value.trim();
-            if (u === "admin" && p === "admin123") {
-                document.getElementById('sec_login_portal').classList.add('hidden');
-                document.getElementById('sec_dashboard').classList.remove('hidden');
-            } else { alert("User/Pass Portal Salah!"); }
+        // 1. SETTING SCANNER
+        function onScanSuccess(decodedText, decodedResult) {
+            // Suara bip simpel (opsional)
+            document.getElementById('inputID').value = decodedText;
+            prosesCekSaldo(decodedText);
         }
 
-        // LOGIN 2: PANEL ADMIN
-        function mintaAksesPanel() { document.getElementById('sec_login_panel').classList.remove('hidden'); }
-        function tutupLoginPanel() { document.getElementById('sec_login_panel').classList.add('hidden'); }
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 }
+        );
+        html5QrcodeScanner.render(onScanSuccess);
 
-        function loginPanelAdmin() {
-            const e = document.getElementById('adm_email').value.trim();
-            const p = document.getElementById('adm_pass').value.trim();
-            
-            // Verifikasi Akun Pak Kiswanto
-            if (e === "kiswanto73@guru.sd.belajar.is" && p === "Kis7384@") {
-                alert("Verifikasi Berhasil! Membuka Laporan...");
-                window.location.href = "dashboard-kantin.html";
-            } else {
-                alert("Email/Password Admin Owner Salah!");
-            }
-        }
+        // 2. FUNGSI CEK KE DATABASE
+        function prosesCekSaldo(id) {
+            const box = document.getElementById('hasilCek');
+            if(!id) return;
 
-        // SELF SERVICE LOGIC
-        function bukaSelfService() {
-            document.getElementById('sec_login_portal').classList.add('hidden');
-            document.getElementById('sec_self_service').classList.remove('hidden');
-        }
-
-        let qrcode;
-        function startScanner() {
-            document.getElementById('btn_scan').classList.add('hidden');
-            qrcode = new Html5Qrcode("reader");
-            qrcode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-                qrcode.stop();
-                prosesDataSiswa(txt.trim());
-            }).catch(err => alert("Kamera error/ditolak!"));
-        }
-
-        function prosesDataSiswa(id) {
             db.ref('kantin_users/' + id).once('value', snap => {
-                const d = snap.val();
-                if(!d) { alert("ID Tidak Ada!"); location.reload(); return; }
-                document.getElementById('hasil_siswa').classList.remove('hidden');
-                document.getElementById('h_nama').innerText = d.nama;
-                document.getElementById('h_saldo').innerText = "Rp " + d.saldo.toLocaleString();
-                
-                db.ref('kantin_laporan').orderByChild('idSiswa').equalTo(id).limitToLast(3).once('value', rSnap => {
-                    const list = document.getElementById('h_riwayat');
-                    list.innerHTML = "<p class='font-black uppercase mb-1'>3 Riwayat Belanja:</p>";
-                    rSnap.forEach(c => {
-                        const v = c.val();
-                        list.innerHTML += `<div class="bg-white p-2 rounded-lg border flex justify-between"><span>${v.item}</span><span class="text-red-500">-${v.total}</span></div>`;
-                    });
-                });
+                if(snap.exists()) {
+                    const d = snap.val();
+                    document.getElementById('resNama').innerText = d.nama;
+                    document.getElementById('resKelas').innerText = d.kelas;
+                    document.getElementById('resSaldo').innerText = "Rp " + (d.saldo || 0).toLocaleString();
+                    box.classList.remove('hidden');
+                    
+                    // Berhenti scan sebentar agar tidak terus menerus bunyi
+                    setTimeout(() => { box.scrollIntoView({behavior: "smooth"}); }, 100);
+                } else {
+                    alert("ID Kartu '" + id + "' Tidak Terdaftar!");
+                    box.classList.add('hidden');
+                }
             });
         }
     </script>
+
+    <style>
+        /* Memperbaiki tampilan box scanner */
+        #reader { border: none !important; }
+        #reader__dashboard_section_csr button {
+            background: #4f46e5 !important;
+            color: white !important;
+            border-radius: 12px !important;
+            padding: 8px 15px !important;
+            font-size: 10px !important;
+            text-transform: uppercase !important;
+            font-weight: bold !important;
+        }
+    </style>
 </body>
 </html>
