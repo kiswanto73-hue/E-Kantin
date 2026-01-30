@@ -20,7 +20,7 @@
                 <div class="bg-white/10 p-3 rounded-2xl text-xl">📊</div>
                 <div>
                     <h1 class="text-xl font-black italic uppercase leading-none">PUSAT KENDALI E-KANTIN</h1>
-                    <p class="text-[10px] font-bold text-indigo-300 uppercase mt-1">Monitoring & Manajemen Siswa Final</p>
+                    <p class="text-[10px] font-bold text-indigo-300 uppercase mt-1">Monitoring, Manajemen & Notifikasi WA</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -35,14 +35,10 @@
                 <p id="totalOmzet" class="text-3xl font-black text-slate-800 tracking-tighter">Rp 0</p>
                 <div id="breakdownStan" class="mt-4 space-y-2 text-[10px] font-bold text-slate-500 uppercase"></div>
             </div>
-            
             <div class="bg-white p-6 rounded-[2rem] shadow-sm flex flex-col items-center justify-center">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4">Grafik Penjualan Stan</h3>
-                <div class="w-full h-[150px]">
-                    <canvas id="chartStan"></canvas>
-                </div>
+                <div class="w-full h-[150px]"><canvas id="chartStan"></canvas></div>
             </div>
-
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border-t-4 border-orange-500">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 text-center">Laporan & Cetak</h3>
                 <div class="grid grid-cols-1 gap-2">
@@ -60,16 +56,16 @@
                     <div class="space-y-3">
                         <input type="text" id="idSiswa" placeholder="ID Kartu / NIS" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
                         <input type="text" id="namaSiswa" placeholder="Nama Lengkap" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500 uppercase">
-                        
-                        <select id="kelasSiswa" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
+                        <select id="kelasSiswa" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
                             <option value="">-- Pilih Kelas --</option>
                             <option value="Kelas 1">Kelas 1</option><option value="Kelas 2">Kelas 2</option>
                             <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
                             <option value="GURU">Guru / Staf</option>
                         </select>
-
                         <input type="number" id="saldoSiswa" placeholder="Isi Saldo (Rp)" class="w-full p-4 bg-emerald-50 rounded-2xl font-bold text-xs outline-none text-emerald-600">
+                        <input type="text" id="waSiswa" placeholder="No WA Ortu (Contoh: 62812345678)" class="w-full p-4 bg-indigo-50 rounded-2xl font-bold text-xs outline-none text-indigo-600">
+                        
                         <button onclick="updateSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest">Simpan Data</button>
                     </div>
                 </div>
@@ -79,10 +75,7 @@
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm overflow-hidden border">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Transaksi</h3>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-bold text-slate-400">FILTER:</span>
-                            <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-none">
-                        </div>
+                        <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-none">
                     </div>
                     <div class="overflow-x-auto max-h-[250px]">
                         <table class="w-full text-[10px] text-left" id="tabelLaporan">
@@ -131,17 +124,21 @@
 
         auth.onAuthStateChanged(user => { if(!user) window.location.href="login.html"; });
 
+        // UPDATE SISWA DENGAN WA
         function updateSiswa() {
             const id = document.getElementById('idSiswa').value.trim();
             const nama = document.getElementById('namaSiswa').value.toUpperCase().trim();
             const kelas = document.getElementById('kelasSiswa').value;
             const saldo = parseInt(document.getElementById('saldoSiswa').value) || 0;
+            const wa = document.getElementById('waSiswa').value.trim(); // <--- WA BARU
+
             if(id && nama && kelas) {
-                db.ref('kantin_users/' + id).set({ id, nama, kelas, saldo }).then(() => { 
+                db.ref('kantin_users/' + id).set({ id, nama, kelas, saldo, wa }).then(() => { 
                     alert("Berhasil disimpan!");
                     document.getElementById('idSiswa').value = "";
                     document.getElementById('namaSiswa').value = "";
                     document.getElementById('saldoSiswa').value = "";
+                    document.getElementById('waSiswa').value = "";
                 });
             } else { alert("Lengkapi data!"); }
         }
@@ -151,7 +148,7 @@
             const filterKls = document.getElementById('filterKelas').value;
             const bulanSekarang = new Date().toISOString().substring(0, 7);
             
-            // SISWA
+            // SISWA LIST
             db.ref('kantin_users').on('value', snap => {
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
                 snap.forEach(s => {
@@ -161,11 +158,12 @@
                             <div class="p-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
                                 <div>
                                     <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
-                                    <p class="text-[10px] font-black text-slate-700 uppercase mt-1">${d.nama}</p>
+                                    <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
                                     <p class="text-[9px] font-bold text-emerald-600">Rp ${d.saldo.toLocaleString()}</p>
+                                    <p class="text-[8px] text-slate-400">WA: ${d.wa || '-'}</p>
                                 </div>
                                 <div class="flex gap-1">
-                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo})" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black">EDIT</button>
+                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa || ''}')" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black uppercase">EDIT</button>
                                     <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-100 text-red-500 rounded-lg text-[8px]">×</button>
                                 </div>
                             </div>`;
@@ -173,7 +171,7 @@
                 });
             });
 
-            // LOG & LAPORAN
+            // LOG TRANSAKSI (LAPORAN BULANAN OTOMATIS)
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
@@ -182,11 +180,7 @@
                     const pts = d.waktu.split(',')[0].split('/');
                     const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
                     const bulanData = tglData.substring(0, 7);
-
-                    let tampil = false;
-                    if(filterTgl) { if(tglData === filterTgl) tampil = true; }
-                    else { if(bulanData === bulanSekarang) tampil = true; }
-
+                    let tampil = (filterTgl) ? (tglData === filterTgl) : (bulanData === bulanSekarang);
                     if(tampil) {
                         totalSmua += d.total;
                         stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
@@ -200,6 +194,7 @@
             });
         }
 
+        // FUNGSI LAINNYA (GRAFIK, CETAK, DLL TETAP)
         function updateChart(stanData) {
             const ctx = document.getElementById('chartStan').getContext('2d');
             if (myChart) myChart.destroy();
@@ -234,9 +229,18 @@
         }
 
         function downloadLaporan() { const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); XLSX.writeFile(wb, "Laporan_Kantin.xlsx"); }
-        function resetTransaksi() { if(confirm("Hapus semua riwayat transaksi?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
-        function hapusSiswa(id) { if(confirm("Hapus siswa "+id+"?")) db.ref('kantin_users').child(id).remove(); }
-        function isiForm(id, nama, kelas, saldo) { document.getElementById('idSiswa').value = id; document.getElementById('namaSiswa').value = nama; document.getElementById('kelasSiswa').value = kelas; document.getElementById('saldoSiswa').value = saldo; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function resetTransaksi() { if(confirm("Hapus semua?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
+        function hapusSiswa(id) { if(confirm("Hapus "+id+"?")) db.ref('kantin_users').child(id).remove(); }
+        
+        function isiForm(id, nama, kelas, saldo, wa) { 
+            document.getElementById('idSiswa').value = id; 
+            document.getElementById('namaSiswa').value = nama; 
+            document.getElementById('kelasSiswa').value = kelas; 
+            document.getElementById('saldoSiswa').value = saldo; 
+            document.getElementById('waSiswa').value = wa; // Set WA saat edit
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        }
+        
         function logout() { auth.signOut().then(() => { window.location.href="index.html"; }); }
         loadData();
     </script>
