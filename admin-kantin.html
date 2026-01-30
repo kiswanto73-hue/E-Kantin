@@ -3,111 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pusat Kendali & Admin E-Kantin</title>
+    <title>Kasir E-Kantin - SD Indonesia Hebat</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-slate-100 p-2 md:p-6 font-sans">
+<body class="bg-slate-100 font-sans">
 
-    <div class="max-w-7xl mx-auto">
-        <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b-4 border-yellow-400">
-            <div class="flex items-center gap-3">
-                <div class="bg-white/10 p-3 rounded-2xl text-xl">📊</div>
-                <div>
-                    <h1 class="text-xl font-black italic uppercase leading-none">PUSAT KENDALI E-KANTIN</h1>
-                    <p class="text-[10px] font-bold text-indigo-300 uppercase mt-1">Monitoring, Manajemen & Notifikasi WA</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <a href="index.html" class="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-bold uppercase text-white">Portal</a>
-                <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase text-white shadow-lg">Keluar</button>
-            </div>
+    <div class="max-w-md mx-auto p-4">
+        <div class="bg-indigo-900 text-white p-6 rounded-3xl shadow-lg mb-6">
+            <h1 class="text-lg font-black italic">POS KASIR E-KANTIN</h1>
+            <p class="text-[10px] text-indigo-300">Tap kartu atau Scan QR untuk transaksi</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border-t-4 border-emerald-500">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">Total Omzet Terpilih</h3>
-                <p id="totalOmzet" class="text-3xl font-black text-slate-800 tracking-tighter">Rp 0</p>
-                <div id="breakdownStan" class="mt-4 space-y-2 text-[10px] font-bold text-slate-500 uppercase"></div>
-            </div>
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm flex flex-col items-center justify-center">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4">Grafik Penjualan Stan</h3>
-                <div class="w-full h-[150px]"><canvas id="chartStan"></canvas></div>
-            </div>
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border-t-4 border-orange-500">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 text-center">Laporan & Cetak</h3>
-                <div class="grid grid-cols-1 gap-2">
-                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-3 rounded-xl text-[10px] font-black uppercase shadow-md">Download Excel 📄</button>
-                    <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-3 rounded-xl text-[10px] font-black uppercase shadow-md">Cetak Kartu Per Kelas 🖨️</button>
-                    <button onclick="resetTransaksi()" class="bg-red-50 text-red-500 p-3 rounded-xl text-[10px] font-bold uppercase italic hover:bg-red-100">Reset Log Transaksi</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-4 space-y-4">
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-                    <h3 class="text-[10px] font-black text-indigo-600 mb-4 uppercase italic">Manajemen Siswa</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="idSiswa" placeholder="ID Kartu / NIS" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500">
-                        <input type="text" id="namaSiswa" placeholder="Nama Lengkap" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none focus:ring-2 ring-indigo-500 uppercase">
-                        <select id="kelasSiswa" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
-                            <option value="">-- Pilih Kelas --</option>
-                            <option value="Kelas 1">Kelas 1</option><option value="Kelas 2">Kelas 2</option>
-                            <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
-                            <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
-                            <option value="GURU">Guru / Staf</option>
-                        </select>
-                        <input type="number" id="saldoSiswa" placeholder="Isi Saldo (Rp)" class="w-full p-4 bg-emerald-50 rounded-2xl font-bold text-xs outline-none text-emerald-600">
-                        <input type="text" id="waSiswa" placeholder="No WA Ortu (Contoh: 62812345678)" class="w-full p-4 bg-indigo-50 rounded-2xl font-bold text-xs outline-none text-indigo-600">
-                        
-                        <button onclick="updateSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest">Simpan Data</button>
-                    </div>
-                </div>
+        <div class="bg-white p-6 rounded-3xl shadow-sm mb-4 border border-slate-200">
+            <input type="text" id="idKartu" placeholder="Scan Kartu..." 
+                   class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-center outline-none ring-2 ring-indigo-500 mb-4" autofocus>
+            
+            <div id="infoSiswa" class="hidden text-center p-4 bg-indigo-50 rounded-2xl mb-4">
+                <p id="dispNama" class="font-black text-indigo-900 uppercase text-sm"></p>
+                <p id="dispSaldo" class="font-bold text-emerald-600 text-xs"></p>
             </div>
 
-            <div class="lg:col-span-8 space-y-6">
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm overflow-hidden border">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Transaksi</h3>
-                        <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-none">
-                    </div>
-                    <div class="overflow-x-auto max-h-[250px]">
-                        <table class="w-full text-[10px] text-left" id="tabelLaporan">
-                            <thead class="bg-slate-50 sticky top-0">
-                                <tr class="text-slate-400 border-b">
-                                    <th class="p-3">WAKTU</th><th>SISWA</th><th>STAN</th><th>ITEM</th><th class="text-right p-3">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logTableBody" class="divide-y divide-slate-50 font-bold italic text-slate-700"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Daftar Akun Siswa</h3>
-                        <select id="filterKelas" onchange="loadData()" class="p-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black outline-none shadow-md">
-                            <option value="SEMUA">SEMUA KELAS</option>
-                            <option value="Kelas 1">KELAS 1</option><option value="Kelas 2">KELAS 2</option>
-                            <option value="Kelas 3">KELAS 3</option><option value="Kelas 4">KELAS 4</option>
-                            <option value="Kelas 5">KELAS 5</option><option value="Kelas 6">KELAS 6</option>
-                            <option value="GURU">GURU/STAF</option>
-                        </select>
-                    </div>
-                    <div id="siswaList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto"></div>
-                </div>
-            </div>
+            <input type="number" id="inputNominal" placeholder="Masukkan Nominal Rp..." 
+                   class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-center outline-none border-b-4 border-orange-500 mb-4 text-xl">
+            
+            <button onclick="prosesTransaksi()" 
+                    class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-widest hover:bg-orange-600">
+                BAYAR SEKARANG
+            </button>
         </div>
     </div>
 
     <script>
-        // CONFIG FIREBASE
+        // CONFIG FIREBASE (PASTIKAN SAMA DENGAN ADMIN)
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -119,130 +49,81 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
-        let myChart = null;
 
-        auth.onAuthStateChanged(user => { if(!user) window.location.href="login.html"; });
+        // 1. CEK DATA SISWA SAAT SCAN (Auto-cek)
+        document.getElementById('idKartu').addEventListener('change', function(e) {
+            const id = e.target.value;
+            db.ref('kantin_users/' + id).once('value', snap => {
+                const d = snap.val();
+                if(d) {
+                    document.getElementById('infoSiswa').classList.remove('hidden');
+                    document.getElementById('dispNama').innerText = d.nama;
+                    document.getElementById('dispSaldo').innerText = "Saldo: Rp " + d.saldo.toLocaleString();
+                } else {
+                    alert("Siswa tidak ditemukan!");
+                    e.target.value = "";
+                }
+            });
+        });
 
-        // UPDATE SISWA DENGAN WA
-        function updateSiswa() {
-            const id = document.getElementById('idSiswa').value.trim();
-            const nama = document.getElementById('namaSiswa').value.toUpperCase().trim();
-            const kelas = document.getElementById('kelasSiswa').value;
-            const saldo = parseInt(document.getElementById('saldoSiswa').value) || 0;
-            const wa = document.getElementById('waSiswa').value.trim(); // <--- WA BARU
+        // 2. PROSES TRANSAKSI & KIRIM WA
+        function prosesTransaksi() {
+            const id = document.getElementById('idKartu').value;
+            const nominal = parseInt(document.getElementById('inputNominal').value);
 
-            if(id && nama && kelas) {
-                db.ref('kantin_users/' + id).set({ id, nama, kelas, saldo, wa }).then(() => { 
-                    alert("Berhasil disimpan!");
-                    document.getElementById('idSiswa').value = "";
-                    document.getElementById('namaSiswa').value = "";
-                    document.getElementById('saldoSiswa').value = "";
-                    document.getElementById('waSiswa').value = "";
-                });
-            } else { alert("Lengkapi data!"); }
+            if(!id || !nominal) { alert("Scan kartu & isi nominal!"); return; }
+
+            db.ref('kantin_users/' + id).once('value', snap => {
+                const user = snap.val();
+                
+                if (user.saldo >= nominal) {
+                    const saldoBaru = user.saldo - nominal;
+                    const waktu = new Date().toLocaleString('id-ID');
+
+                    // A. Update Saldo
+                    db.ref('kantin_users/' + id).update({ saldo: saldoBaru });
+
+                    // B. Simpan Log Laporan
+                    const log = {
+                        idSiswa: id,
+                        namaSiswa: user.nama,
+                        total: nominal,
+                        stan: "Kantin Utama",
+                        item: "Pembelian Kantin",
+                        waktu: waktu
+                    };
+                    
+                    db.ref('kantin_laporan').push(log).then(() => {
+                        alert("✅ TRANSAKSI BERHASIL!");
+
+                        // C. KIRIM NOTIFIKASI WA (Hanya jika ada nomor WA)
+                        if (user.wa) {
+                            kirimPesanWA(user.wa, user.nama, nominal, saldoBaru);
+                        }
+
+                        location.reload(); 
+                    });
+
+                } else {
+                    alert("❌ SALDO TIDAK CUKUP!");
+                }
+            });
         }
 
-        function loadData() {
-            const filterTgl = document.getElementById('filterTanggal').value;
-            const filterKls = document.getElementById('filterKelas').value;
-            const bulanSekarang = new Date().toISOString().substring(0, 7);
+        // 3. FUNGSI KIRIM WA (MENGGUNAKAN MODE REDIRECT CEPAT)
+        function kirimPesanWA(nomor, nama, nominal, sisa) {
+            const pesan = `*INFO E-KANTIN*\n\nAnanda *${nama}* baru saja bertransaksi.\nNominal: *Rp ${nominal.toLocaleString()}*\nSisa Saldo: *Rp ${sisa.toLocaleString()}*\n\n_SD Indonesia Hebat_`;
             
-            // SISWA LIST
-            db.ref('kantin_users').on('value', snap => {
-                const cont = document.getElementById('siswaList'); cont.innerHTML = "";
-                snap.forEach(s => {
-                    const d = s.val();
-                    if(filterKls === "SEMUA" || d.kelas === filterKls) {
-                        cont.innerHTML += `
-                            <div class="p-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
-                                <div>
-                                    <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
-                                    <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
-                                    <p class="text-[9px] font-bold text-emerald-600">Rp ${d.saldo.toLocaleString()}</p>
-                                    <p class="text-[8px] text-slate-400">WA: ${d.wa || '-'}</p>
-                                </div>
-                                <div class="flex gap-1">
-                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa || ''}')" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black uppercase">EDIT</button>
-                                    <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-100 text-red-500 rounded-lg text-[8px]">×</button>
-                                </div>
-                            </div>`;
-                    }
-                });
-            });
-
-            // LOG TRANSAKSI (LAPORAN BULANAN OTOMATIS)
-            db.ref('kantin_laporan').on('value', snap => {
-                const body = document.getElementById('logTableBody'); body.innerHTML = "";
-                let totalSmua = 0; let stanGrup = {};
-                snap.forEach(l => {
-                    const d = l.val();
-                    const pts = d.waktu.split(',')[0].split('/');
-                    const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
-                    const bulanData = tglData.substring(0, 7);
-                    let tampil = (filterTgl) ? (tglData === filterTgl) : (bulanData === bulanSekarang);
-                    if(tampil) {
-                        totalSmua += d.total;
-                        stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
-                        body.innerHTML = `<tr><td class="p-3 text-slate-400 font-normal">${d.waktu}</td><td>${d.namaSiswa}</td><td><span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full uppercase">${d.stan}</span></td><td>${d.item}</td><td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td></tr>` + body.innerHTML;
-                    }
-                });
-                document.getElementById('totalOmzet').innerText = "Rp " + totalSmua.toLocaleString();
-                const breakEl = document.getElementById('breakdownStan'); breakEl.innerHTML = "";
-                Object.keys(stanGrup).forEach(s => { breakEl.innerHTML += `<div class="flex justify-between border-b border-slate-50"><span>${s}</span><span>Rp ${stanGrup[s].toLocaleString()}</span></div>`; });
-                updateChart(stanGrup);
-            });
+            // Format nomor agar diawali 62
+            let formatNomor = nomor;
+            if(formatNomor.startsWith('0')) formatNomor = '62' + formatNomor.slice(1);
+            
+            // Mode Redirect (Buka Tab WA Sejenak)
+            const url = `https://api.whatsapp.com/send?phone=${formatNomor}&text=${encodeURIComponent(pesan)}`;
+            
+            // Membuka WA di window kecil/tab baru agar tidak mengganggu kasir
+            window.open(url, '_blank');
         }
-
-        // FUNGSI LAINNYA (GRAFIK, CETAK, DLL TETAP)
-        function updateChart(stanData) {
-            const ctx = document.getElementById('chartStan').getContext('2d');
-            if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: Object.keys(stanData), datasets: [{ data: Object.values(stanData), backgroundColor: ['#4338ca', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 8, weight: 'bold' } } } } }
-            });
-        }
-
-        function cetakKolektif() {
-            const filter = document.getElementById('filterKelas').value;
-            const win = window.open('', '_blank');
-            win.document.write('<html><head><title>Cetak Kartu</title><style>body{font-family:sans-serif;margin:10mm}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.card{width:85mm;height:50mm;border:2px solid #333;padding:10px;border-radius:10px;display:flex;align-items:center;page-break-inside:avoid;margin-bottom:10px}.qr{width:80px;height:80px}.info{flex:1;text-align:right;margin-left:10px}h3{margin:0;font-size:14px;text-transform:uppercase}p{margin:2px 0;font-size:10px}</style></head><body><div class="grid">');
-            db.ref('kantin_users').once('value', snap => {
-                snap.forEach(s => {
-                    const d = s.val();
-                    if(filter === "SEMUA" || d.kelas === filter) {
-                        win.document.write(`<div class="card"><div id="qr-${d.id}"></div><div class="info"><p>E-KANTIN</p><h3>${d.nama}</h3><p>KELAS: ${d.kelas}</p><p>ID: ${d.id}</p></div></div>`);
-                    }
-                });
-                win.document.write('</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>');
-                snap.forEach(s => {
-                    const d = s.val();
-                    if(filter === "SEMUA" || d.kelas === filter) {
-                        win.document.write(`new QRCode(document.getElementById("qr-${d.id}"), {text:"${d.id}", width:80, height:80});`);
-                    }
-                });
-                win.document.write('setTimeout(()=>{window.print();},1500);<\/script></body></html>');
-                win.document.close();
-            });
-        }
-
-        function downloadLaporan() { const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); XLSX.writeFile(wb, "Laporan_Kantin.xlsx"); }
-        function resetTransaksi() { if(confirm("Hapus semua?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
-        function hapusSiswa(id) { if(confirm("Hapus "+id+"?")) db.ref('kantin_users').child(id).remove(); }
-        
-        function isiForm(id, nama, kelas, saldo, wa) { 
-            document.getElementById('idSiswa').value = id; 
-            document.getElementById('namaSiswa').value = nama; 
-            document.getElementById('kelasSiswa').value = kelas; 
-            document.getElementById('saldoSiswa').value = saldo; 
-            document.getElementById('waSiswa').value = wa; // Set WA saat edit
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        }
-        
-        function logout() { auth.signOut().then(() => { window.location.href="index.html"; }); }
-        loadData();
     </script>
 </body>
 </html>
