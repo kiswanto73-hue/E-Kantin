@@ -1,23 +1,21 @@
 {
+  "name": "E-Kantin Pro",
   "short_name": "E-Kantin",
-  "name": "E-Kantin Indonesia Hebat",
-  "description": "Sistem Manajemen Kantin & Stok Digital",
+  "description": "Sistem Pembayaran Kantin Sekolah",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#312e81",
+  "theme_color": "#312e81",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081918.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "https://cdn-icons-png.flaticon.com/512/2942/2942322.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081918.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "https://cdn-icons-png.flaticon.com/512/2942/2942322.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
-  ],
-  "start_url": "index.html",
-  "background_color": "#1e1b4b",
-  "theme_color": "#1e1b4b",
-  "display": "standalone",
-  "orientation": "portrait",
-  "scope": "./"
+  ]
 }
