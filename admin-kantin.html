@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pusat Kendali & Admin E-Kantin</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#312e81">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -107,6 +110,15 @@
     </div>
 
     <script>
+        // === KODE REGISTRASI SERVICE WORKER (PWA) ===
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Aplikasi E-Kantin Siap!'))
+                    .catch(err => console.log('Gagal daftar SW', err));
+            });
+        }
+
         // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
@@ -124,21 +136,17 @@
 
         auth.onAuthStateChanged(user => { if(!user) window.location.href="login.html"; });
 
-        // UPDATE SISWA DENGAN WA
         function updateSiswa() {
             const id = document.getElementById('idSiswa').value.trim();
             const nama = document.getElementById('namaSiswa').value.toUpperCase().trim();
             const kelas = document.getElementById('kelasSiswa').value;
             const saldo = parseInt(document.getElementById('saldoSiswa').value) || 0;
-            const wa = document.getElementById('waSiswa').value.trim(); // <--- WA BARU
+            const wa = document.getElementById('waSiswa').value.trim();
 
             if(id && nama && kelas) {
                 db.ref('kantin_users/' + id).set({ id, nama, kelas, saldo, wa }).then(() => { 
                     alert("Berhasil disimpan!");
-                    document.getElementById('idSiswa').value = "";
-                    document.getElementById('namaSiswa').value = "";
-                    document.getElementById('saldoSiswa').value = "";
-                    document.getElementById('waSiswa').value = "";
+                    ['idSiswa','namaSiswa','saldoSiswa','waSiswa'].forEach(i => document.getElementById(i).value = "");
                 });
             } else { alert("Lengkapi data!"); }
         }
@@ -148,7 +156,6 @@
             const filterKls = document.getElementById('filterKelas').value;
             const bulanSekarang = new Date().toISOString().substring(0, 7);
             
-            // SISWA LIST
             db.ref('kantin_users').on('value', snap => {
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
                 snap.forEach(s => {
@@ -171,7 +178,6 @@
                 });
             });
 
-            // LOG TRANSAKSI (LAPORAN BULANAN OTOMATIS)
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
@@ -194,7 +200,6 @@
             });
         }
 
-        // FUNGSI LAINNYA (GRAFIK, CETAK, DLL TETAP)
         function updateChart(stanData) {
             const ctx = document.getElementById('chartStan').getContext('2d');
             if (myChart) myChart.destroy();
@@ -237,7 +242,7 @@
             document.getElementById('namaSiswa').value = nama; 
             document.getElementById('kelasSiswa').value = kelas; 
             document.getElementById('saldoSiswa').value = saldo; 
-            document.getElementById('waSiswa').value = wa; // Set WA saat edit
+            document.getElementById('waSiswa').value = wa; 
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
         
