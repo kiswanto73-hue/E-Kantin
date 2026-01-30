@@ -14,31 +14,74 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-slate-100 font-sans min-h-screen pb-20">
+<body class="bg-indigo-950 font-sans min-h-screen">
 
-    <div class="bg-indigo-950 text-white p-8 rounded-b-[3rem] shadow-2xl border-b-8 border-yellow-400 mb-6 text-center">
-        <h1 class="text-3xl font-black italic tracking-tighter uppercase">E-Kantin 🥤</h1>
-        <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em] mt-2">Indonesia Hebat Digital System</p>
+    <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-indigo-950">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl border-b-8 border-yellow-400">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-3 text-2xl">🔐</div>
+                <h2 class="text-xl font-black text-indigo-900 uppercase italic">Akses Admin</h2>
+                <p class="text-[9px] font-bold text-slate-400 tracking-widest uppercase">E-Kantin Indonesia Hebat</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="userAdmin" placeholder="Username" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-2 ring-indigo-500 text-sm">
+                <input type="password" id="passAdmin" placeholder="Password" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-2 ring-indigo-500 text-sm">
+                
+                <button onclick="cekLogin()" class="w-full bg-indigo-600 text-white font-black p-4 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all uppercase tracking-widest text-[10px]">
+                    Masuk Portal 🚀
+                </button>
+
+                <div class="relative py-4">
+                    <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-100"></span></div>
+                    <div class="relative flex justify-center text-[8px] uppercase font-black text-slate-300"><span class="bg-white px-2 italic">Khusus Siswa</span></div>
+                </div>
+
+                <button onclick="bukaCekSaldo()" class="w-full bg-emerald-50 text-emerald-600 font-black p-4 rounded-2xl text-[10px] uppercase border-2 border-emerald-100">
+                    🔍 Cek Saldo Siswa
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="max-w-md mx-auto px-4 space-y-4">
-        <a href="manajemen-menu.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-indigo-600 hover:scale-95 transition-all">
-            <h3 class="font-black text-indigo-900 uppercase italic">📋 Manajemen Menu</h3>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">Atur Stok & Harga</p>
-        </a>
-        
-        <a href="dashboard-kantin.html" class="block bg-white p-6 rounded-[2rem] shadow-sm border-l-8 border-emerald-500 hover:scale-95 transition-all">
-            <h3 class="font-black text-indigo-900 uppercase italic">📊 Laporan Penjualan</h3>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">Pantau Pendapatan Real-time</p>
-        </a>
+    <div id="cekSaldoSection" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-emerald-600">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[3rem] shadow-2xl">
+            <h2 class="text-center font-black text-indigo-900 uppercase italic mb-4">Cek Saldo Kamu</h2>
+            <input type="text" id="inputNamaSaldo" placeholder="MASUKKAN NAMA..." class="w-full p-4 bg-slate-100 rounded-2xl font-black text-center outline-none border-2 border-transparent focus:border-emerald-500 mb-3 uppercase">
+            <button onclick="prosesCekSaldo()" class="w-full bg-emerald-600 text-white font-black p-4 rounded-2xl shadow-lg uppercase text-xs mb-4 italic">Cek Sekarang ✨</button>
+            
+            <div id="hasilSaldo" class="hidden bg-indigo-50 p-6 rounded-3xl text-center border-2 border-dashed border-indigo-200">
+                <p class="text-[9px] font-bold text-indigo-400 uppercase leading-none">Sisa Saldo:</p>
+                <h3 id="txtSaldo" class="text-3xl font-black text-indigo-900 mt-1">Rp 0</h3>
+            </div>
+            
+            <button onclick="kembaliKeLogin()" class="w-full text-slate-400 font-bold text-[9px] uppercase mt-6 tracking-widest text-center underline">Kembali</button>
+        </div>
     </div>
 
-    <div class="fixed bottom-6 left-0 right-0 text-center">
-        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">V.1.0 - App Ready for Playstore</p>
+    <div id="mainDashboard" class="hidden pb-10">
+        <div class="bg-white text-indigo-900 p-8 rounded-b-[4rem] shadow-2xl border-b-8 border-yellow-400 mb-8 text-center relative">
+            <button onclick="logout()" class="absolute top-8 right-8 text-[8px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full uppercase">Logout</button>
+            <h1 class="text-3xl font-black italic tracking-tighter uppercase leading-none">Dashboard Admin 🍱</h1>
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-3 italic">E-Kantin Indonesia Hebat</p>
+        </div>
+
+        <div class="max-w-md mx-auto px-6 grid grid-cols-1 gap-4">
+            <a href="kasir.html" class="flex items-center gap-4 bg-white p-5 rounded-[2.5rem] shadow-xl border-l-8 border-orange-500 active:scale-95 transition-all">
+                <div class="bg-orange-100 text-orange-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl">🛒</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic text-sm">Kasir Kantin</h3><p class="text-[8px] text-slate-400 font-bold uppercase mt-1 italic">Input Penjualan</p></div>
+            </a>
+            <a href="manajemen-menu.html" class="flex items-center gap-4 bg-white p-5 rounded-[2.5rem] shadow-xl border-l-8 border-indigo-600 active:scale-95 transition-all">
+                <div class="bg-indigo-100 text-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl">📋</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic text-sm">Manajemen Menu</h3><p class="text-[8px] text-slate-400 font-bold uppercase mt-1 italic">Atur Stok & Audit</p></div>
+            </a>
+            <a href="dashboard-kantin.html" class="flex items-center gap-4 bg-white p-5 rounded-[2.5rem] shadow-xl border-l-8 border-emerald-500 active:scale-95 transition-all">
+                <div class="bg-emerald-100 text-emerald-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl">📊</div>
+                <div><h3 class="font-black text-indigo-900 uppercase italic text-sm">Panel Admin</h3><p class="text-[8px] text-slate-400 font-bold uppercase mt-1 italic">Rekap & Keuangan</p></div>
+            </a>
+        </div>
     </div>
 
     <script>
-        // KONFIGURASI FIREBASE (Ganti dengan config Bapak jika berbeda)
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -49,15 +92,36 @@
             appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
         };
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // PENDAFTARAN SERVICE WORKER (AGAR BISA JADI APLIKASI)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Aplikasi E-Kantin Siap!'))
-                    .catch(err => console.log('Pendaftaran Gagal', err));
+        // VALIDASI LOGIN ADMIN
+        function cekLogin() {
+            const u = document.getElementById('userAdmin').value;
+            const p = document.getElementById('passAdmin').value;
+            if (u === "admin" && p === "admin123") {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+            } else { alert("Akses Dibatasi! Periksa Username & Password."); }
+        }
+
+        function logout() { location.reload(); }
+        function bukaCekSaldo() { document.getElementById('loginSection').classList.add('hidden'); document.getElementById('cekSaldoSection').classList.remove('hidden'); }
+        function kembaliKeLogin() { location.reload(); }
+
+        function prosesCekSaldo() {
+            const nama = document.getElementById('inputNamaSaldo').value.trim().toUpperCase();
+            if(!nama) return alert("Ketik Nama Siswa!");
+            db.ref('saldo_siswa/' + nama).once('value', snap => {
+                const hasil = document.getElementById('hasilSaldo');
+                const txt = document.getElementById('txtSaldo');
+                hasil.classList.remove('hidden');
+                if(snap.exists()){
+                    txt.innerText = "Rp " + snap.val().saldo.toLocaleString();
+                } else { txt.innerText = "Tidak Ada Data"; }
             });
         }
+
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
     </script>
 </body>
 </html>
