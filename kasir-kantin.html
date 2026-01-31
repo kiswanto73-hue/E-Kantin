@@ -52,9 +52,6 @@
     </div>
 
     <script>
-        // Registrasi Service Worker
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -70,15 +67,16 @@
         let cart = []; let total = 0;
         const FONNTE_TOKEN = "4xNPsRSw3FPeUjR8cxXjaAT8xpKv"; 
 
-        // LOAD MENU
+        // LOAD MENU (Real-time update stok di layar kasir)
         db.ref('kantin_menus').on('value', snap => {
             const container = document.getElementById('menuContainer'); container.innerHTML = "";
             snap.forEach(stanSnap => {
                 let html = `<div class="bg-white p-4 rounded-[2rem] shadow-sm mb-4"><h3 class="text-[10px] font-black text-indigo-500 uppercase mb-3 border-b pb-1">${stanSnap.key}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
                 stanSnap.forEach(mSnap => {
                     const m = mSnap.val();
-                    const habis = (m.stok || 0) <= 0;
-                    html += `<button onclick="${habis ? '' : `addToCart('${stanSnap.key}','${m.nama}',${m.harga},'${mSnap.key}')`}" class="${habis?'opacity-30':'hover:bg-indigo-50'} p-3 bg-slate-50 rounded-xl flex justify-between text-left italic font-bold"><div><p class="text-[11px] uppercase">${m.nama}</p><p class="text-[10px] text-emerald-600">Rp ${m.harga.toLocaleString()}</p></div><span class="text-[8px] text-slate-400">Stok: ${m.stok||0}</span></button>`;
+                    const habis = (m.stok_awal - (m.terjual || 0)) <= 0;
+                    const sisa = (m.stok_awal - (m.terjual || 0));
+                    html += `<button onclick="${habis ? "alert('Stok Habis!')" : `addToCart('${stanSnap.key}','${m.nama}',${m.harga},'${mSnap.key}')`}" class="${habis?'opacity-30 cursor-not-allowed':'hover:bg-indigo-50'} p-3 bg-slate-50 rounded-xl flex justify-between text-left italic font-bold"><div><p class="text-[11px] uppercase">${m.nama}</p><p class="text-[10px] text-emerald-600">Rp ${m.harga.toLocaleString()}</p></div><span class="text-[8px] text-slate-400 uppercase">Sisa: ${sisa < 0 ? 0 : sisa}</span></button>`;
                 });
                 container.innerHTML += html + `</div></div>`;
             });
@@ -98,40 +96,67 @@
             if(cart.length === 0) return alert("Keranjang kosong!");
             document.getElementById('scannerArea').classList.remove('hidden');
             scanner = new Html5Qrcode("reader");
-            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (id) => { scanner.stop(); prosesBayar(id.trim()); });
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (id) => { 
+                scanner.stop().then(() => {
+                    document.getElementById('scannerArea').classList.add('hidden');
+                    prosesBayar(id.trim()); 
+                });
+            }).catch(err => alert("Kamera Error: " + err));
         }
 
         function prosesBayar(idSiswa) {
             db.ref('kantin_users/' + idSiswa).once('value', userSnap => {
                 const user = userSnap.val();
-                if(!user || user.saldo < total) { alert("Saldo tidak cukup/ID salah!"); location.reload(); return; }
+                if(!user) return alert("ID Siswa Tidak Ditemukan!");
+                if(user.saldo < total) return alert("Saldo " + user.nama + " tidak cukup!");
 
                 const saldoBaru = user.saldo - total;
                 const waktu = new Date().toLocaleString('id-ID');
-                let detailWA = "";
+                let detailItems = "";
+                let itemLog = [];
 
-                // Update Saldo & Stok
-                db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
+                // 1. UPDATE STOK & TERJUAL SECARA OTOMATIS
                 cart.forEach(item => {
-                    detailWA += `- ${item.nama} (Rp ${item.harga.toLocaleString()})\n`;
-                    db.ref(`kantin_menus/${item.stan}/${item.idMenu}/stok`).transaction(s => (s || 0) - 1);
+                    detailItems += `- ${item.nama} (Rp ${item.harga.toLocaleString()})\n`;
+                    itemLog.push(item.nama);
+                    
+                    const menuRef = db.ref(`kantin_menus/${item.stan}/${item.idMenu}`);
+                    menuRef.transaction(currentData => {
+                        if (currentData) {
+                            currentData.terjual = (currentData.terjual || 0) + 1;
+                            currentData.stok_akhir = currentData.stok_awal - currentData.terjual;
+                            // Update field stok lama agar tetap kompatibel
+                            currentData.stok = currentData.stok_akhir;
+                        }
+                        return currentData;
+                    });
                 });
 
-                // Laporan
-                db.ref('kantin_laporan').push({ idSiswa, namaSiswa: user.nama, total, item: "Pembelian Kantin", stan: "Kantin Terpadu", waktu });
+                // 2. POTONG SALDO SISWA
+                db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
 
-                // KIRIM WA OTOMATIS
+                // 3. CATAT LAPORAN DETAIL
+                db.ref('kantin_laporan').push({ 
+                    idSiswa, 
+                    namaSiswa: user.nama, 
+                    total, 
+                    item: itemLog.join(", "), 
+                    stan: "Multi-Stan", 
+                    waktu 
+                });
+
+                // 4. KIRIM WA OTOMATIS
                 if (user.wa) {
-                    const pesan = `*STRUK DIGITAL E-KANTIN*\n\nAnanda: *${user.nama}*\n\n*Detail Belanja:*\n${detailWA}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_SD Indonesia Hebat_`;
+                    const pesan = `*STRUK DIGITAL E-KANTIN*\n\nAnanda: *${user.nama}*\n\n*Detail Belanja:*\n${detailItems}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_Terima kasih telah berbelanja_`;
                     fetch('https://api.fonnte.com/send', {
                         method: 'POST',
                         headers: { 'Authorization': FONNTE_TOKEN },
                         body: new URLSearchParams({ 'target': user.wa, 'message': pesan })
-                    }).then(() => console.log("WA Sent"));
+                    });
                 }
 
-                alert("✅ Sukses! Sisa Saldo: Rp " + saldoBaru.toLocaleString());
-                location.reload();
+                alert("✅ TRANSAKSI BERHASIL!\nSiswa: " + user.nama + "\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
+                resetCart();
             });
         }
     </script>
