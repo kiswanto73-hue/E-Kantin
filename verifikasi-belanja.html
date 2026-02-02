@@ -71,38 +71,49 @@
                     document.getElementById('scanMsg').classList.add('hidden');
                     cariRiwayat(id.trim());
                 }
-            );
+            ).catch(err => {
+                alert("Kamera Error: " + err);
+            });
         }
 
+        // --- FUNGSI CARI RIWAYAT YANG SUDAH DIPERBAIKI ---
         function cariRiwayat(id) {
-            const tgl = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+            const idBersih = id.trim();
+            const tglHariIni = new Date().toLocaleDateString('id-ID'); // Format: DD/MM/YYYY
             
-            // 1. Ambil Nama Siswa
-            db.ref('users/' + id).once('value').then(snap => {
+            console.log("Mencari ID:", idBersih, "untuk tanggal:", tglHariIni);
+            
+            // 1. Ambil Nama Siswa dulu dari folder 'users'
+            db.ref('users/' + idBersih).once('value').then(snap => {
                 const user = snap.val();
                 if(!user) {
-                    alert("ID Kartu tidak terdaftar!");
+                    alert("❌ Kartu ID: " + idBersih + " belum terdaftar di sistem E-Kantin.");
                     return;
                 }
+                
                 document.getElementById('namaSiswa').innerText = user.nama;
-                document.getElementById('idSiswa').innerText = "ID: " + id;
+                document.getElementById('idSiswa').innerText = "ID: " + idBersih;
 
-                // 2. Ambil Transaksi Terakhir Hari Ini
-                db.ref('log_transaksi/' + id)
-                  .orderByChild('tanggal')
-                  .equalTo(new Date().toLocaleDateString('id-ID'))
+                // 2. Ambil Transaksi (Cek folder log_transaksi)
+                // Kita ambil transaksi terbaru
+                db.ref('log_transaksi/' + idBersih)
                   .limitToLast(1)
                   .once('value').then(tSnap => {
                     if(!tSnap.exists()) {
-                        alert("Tidak ada transaksi untuk siswa ini hari ini.");
+                        alert("⚠️ " + user.nama + " belum pernah melakukan transaksi.");
                         return;
                     }
 
-                    tSnap.forEach(data => {
-                        const trx = data.val();
+                    let foundMatch = false;
+                    tSnap.forEach(child => {
+                        const trx = child.val();
+                        // Tampilkan jika tanggal sama atau jika Bapak ingin lihat transaksi terakhir saja
                         tampilkanDetail(trx);
+                        foundMatch = true;
                     });
                 });
+            }).catch(err => {
+                alert("🔥 Masalah Database: " + err.message);
             });
         }
 
@@ -110,9 +121,8 @@
             const list = document.getElementById('listPesanan');
             list.innerHTML = "";
             
-            // Format rincian belanja (Asumsi rincian disimpan sebagai string atau array di log)
-            // Jika rincian belanja Bapak berupa object, kita loop objectnya
-            if (trx.rincian) {
+            // Jika rincian belanja Bapak berupa object atau array
+            if (trx.rincian && Array.isArray(trx.rincian)) {
                 trx.rincian.forEach(item => {
                     list.innerHTML += `
                         <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-1">
@@ -121,11 +131,14 @@
                         </div>
                     `;
                 });
+            } else if (typeof trx.rincian === 'string') {
+                // Jika rincian disimpan sebagai teks panjang
+                list.innerHTML = `<p class="text-[11px] font-bold text-slate-600 uppercase leading-relaxed">${trx.rincian}</p>`;
             } else {
-                list.innerHTML = `<p class="text-[10px] text-red-500 italic text-center">Rincian item tidak ditemukan, cek manual total bayar.</p>`;
+                list.innerHTML = `<p class="text-[10px] text-red-500 italic text-center">Detail barang tidak tersedia (Hanya nominal).</p>`;
             }
 
-            document.getElementById('totalBayar').innerText = "Rp " + trx.total.toLocaleString();
+            document.getElementById('totalBayar').innerText = "Rp " + (trx.total ? trx.total.toLocaleString() : "0");
             document.getElementById('resultArea').classList.remove('hidden');
         }
 
