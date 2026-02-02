@@ -47,7 +47,8 @@
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-orange-500 text-center">
                 <div class="grid grid-cols-1 gap-2">
-                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Excel 📄</button>
+                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Excel Transaksi 📄</button>
+                    <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md hover:bg-emerald-600">Excel Saldo 💰</button>
                     <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Cetak QR 🖨️</button>
                     <button onclick="resetTransaksi()" class="text-red-500 text-[8px] font-bold uppercase italic">Reset Transaksi</button>
                 </div>
@@ -111,7 +112,6 @@
     </div>
 
     <script>
-        // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -148,7 +148,6 @@
             const filterKls = document.getElementById('filterKelas').value;
             const bulanSekarang = new Date().toISOString().substring(0, 7);
             
-            // 1. DAFTAR SISWA & TOTAL DEPOSIT
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
@@ -173,7 +172,6 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
-            // 2. LOG RIWAYAT
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
@@ -211,6 +209,31 @@
                 type: 'doughnut',
                 data: { labels: Object.keys(stanData), datasets: [{ data: Object.values(stanData), backgroundColor: ['#4338ca', '#f59e0b', '#10b981', '#ef4444'], borderWidth: 0 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function downloadSaldo() {
+            const filterKls = document.getElementById('filterKelas').value;
+            const listData = [];
+            db.ref('kantin_users').once('value', snap => {
+                snap.forEach(s => {
+                    const d = s.val();
+                    if (filterKls === "SEMUA" || d.kelas === filterKls) {
+                        listData.push({
+                            'ID KARTU': d.id,
+                            'NAMA SISWA': d.nama,
+                            'KELAS': d.kelas,
+                            'SALDO': d.saldo,
+                            'WA': d.wa || '-'
+                        });
+                    }
+                });
+                if(listData.length > 0) {
+                    const ws = XLSX.utils.json_to_sheet(listData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Saldo");
+                    XLSX.writeFile(wb, `Saldo_Siswa_${filterKls.replace(/ /g,'_')}.xlsx`);
+                } else { alert("Data Kosong!"); }
             });
         }
 
