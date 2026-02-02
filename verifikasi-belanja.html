@@ -8,50 +8,54 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
 <body class="bg-indigo-950 min-h-screen p-4 text-slate-800">
 
     <div class="max-w-md mx-auto">
         <div class="bg-amber-500 p-6 rounded-[2rem] shadow-xl mb-6 text-center border-b-4 border-amber-700">
-            <button onclick="window.location.href='index.html'" class="float-left text-amber-900 font-bold">⬅️</button>
-            <h1 class="text-xl font-black uppercase italic text-amber-900">Petugas Pemeriksa</h1>
-            <p class="text-[10px] font-bold text-amber-800 opacity-80 uppercase tracking-widest">Verifikasi Item Belanja Siswa</p>
+            <button onclick="window.location.href='index.html'" class="float-left text-amber-900 font-bold bg-white/20 w-8 h-8 rounded-full flex items-center justify-center">←</button>
+            <h1 class="text-xl font-black uppercase italic text-amber-900">Pemeriksa Belanja</h1>
+            <p class="text-[10px] font-bold text-amber-800 opacity-80 uppercase tracking-widest">Cek Kesesuaian Barang Siswa</p>
         </div>
 
         <div id="scannerArea" class="mb-6 rounded-[2rem] overflow-hidden border-4 border-amber-500 bg-black shadow-2xl relative">
             <div id="reader" style="width: 100%;"></div>
-            <div id="scanMsg" class="absolute inset-0 flex items-center justify-center bg-black/60 text-white font-bold text-sm pointer-events-none">
-                SIAP SCAN KARTU...
+            <div id="scanMsg" class="absolute inset-0 flex items-center justify-center bg-black/40 text-white font-bold text-sm pointer-events-none text-center p-4">
+                ARAHKAN KAMERA KE KARTU...
             </div>
         </div>
 
-        <div id="resultArea" class="hidden animate-all">
+        <div id="resultArea" class="hidden">
             <div class="bg-white p-6 rounded-[2rem] shadow-2xl border-t-8 border-emerald-500">
                 <div class="text-center mb-4">
-                    <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase leading-none">-</h2>
-                    <p id="idSiswa" class="text-[10px] font-bold text-slate-400 mt-1 tracking-widest uppercase">ID: -</p>
+                    <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase leading-none">Mencari...</h2>
+                    <p id="idSiswa" class="text-[10px] font-bold text-slate-400 mt-2 tracking-widest uppercase">ID: -</p>
                 </div>
 
                 <div class="bg-slate-50 rounded-2xl p-4 mb-4">
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-2 italic">Daftar Pesanan:</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-2 italic">Rincian Barang:</p>
                     <div id="listPesanan" class="space-y-2">
                         </div>
                 </div>
 
                 <div class="flex justify-between items-center px-2">
                     <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Total Bayar:</span>
-                    <span id="totalBayar" class="text-lg font-black text-emerald-600 font-mono">Rp 0</span>
+                    <span id="totalBayar" class="text-xl font-black text-emerald-600 font-mono">Rp 0</span>
                 </div>
 
-                <button onclick="resetPemeriksaan()" class="w-full mt-6 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-xs tracking-widest">
-                    Selesai & Scan Berikutnya
+                <button onclick="resetPemeriksaan()" class="w-full mt-6 bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all">
+                    Selesai & Scan Lagi
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Gunakan Config yang sama dengan E-Kantin Bapak
+        // CONFIG FIREBASE (Sama dengan E-Perpus & E-Kantin)
         const firebaseConfig = {
             apiKey: "AIzaSyBXt0gEgczYD1jQ9OhNk5FGN8CePIFaSYw",
             databaseURL: "https://e-perpus-a652c-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -66,54 +70,59 @@
         function startScanner() {
             html5QrCode.start(
                 { facingMode: "environment" }, 
-                { fps: 10, qrbox: 250 },
+                { fps: 15, qrbox: 250 },
                 (id) => {
                     document.getElementById('scanMsg').classList.add('hidden');
                     cariRiwayat(id.trim());
                 }
             ).catch(err => {
-                alert("Kamera Error: " + err);
+                console.error("Kamera Error:", err);
             });
         }
 
-        // --- FUNGSI CARI RIWAYAT YANG SUDAH DIPERBAIKI ---
         function cariRiwayat(id) {
             const idBersih = id.trim();
-            const tglHariIni = new Date().toLocaleDateString('id-ID'); // Format: DD/MM/YYYY
+            console.log("Mencari ID:", idBersih);
             
-            console.log("Mencari ID:", idBersih, "untuk tanggal:", tglHariIni);
-            
-            // 1. Ambil Nama Siswa dulu dari folder 'users'
-            db.ref('users/' + idBersih).once('value').then(snap => {
-                const user = snap.val();
-                if(!user) {
-                    alert("❌ Kartu ID: " + idBersih + " belum terdaftar di sistem E-Kantin.");
-                    return;
-                }
-                
-                document.getElementById('namaSiswa').innerText = user.nama;
-                document.getElementById('idSiswa').innerText = "ID: " + idBersih;
+            // Reset Tampilan
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('namaSiswa').innerText = "Mencari...";
+            document.getElementById('listPesanan').innerHTML = "";
 
-                // 2. Ambil Transaksi (Cek folder log_transaksi)
-                // Kita ambil transaksi terbaru
-                db.ref('log_transaksi/' + idBersih)
-                  .limitToLast(1)
-                  .once('value').then(tSnap => {
-                    if(!tSnap.exists()) {
-                        alert("⚠️ " + user.nama + " belum pernah melakukan transaksi.");
-                        return;
+            // 1. Cari User dengan pencocokan manual (Case Sensitive Safe)
+            db.ref('users').once('value').then(snap => {
+                let userFound = null;
+                let keyFound = "";
+
+                snap.forEach(child => {
+                    if (child.key == idBersih) {
+                        userFound = child.val();
+                        keyFound = child.key;
                     }
-
-                    let foundMatch = false;
-                    tSnap.forEach(child => {
-                        const trx = child.val();
-                        // Tampilkan jika tanggal sama atau jika Bapak ingin lihat transaksi terakhir saja
-                        tampilkanDetail(trx);
-                        foundMatch = true;
-                    });
                 });
-            }).catch(err => {
-                alert("🔥 Masalah Database: " + err.message);
+
+                if(userFound) {
+                    document.getElementById('namaSiswa').innerText = userFound.nama;
+                    document.getElementById('idSiswa').innerText = "ID: " + keyFound;
+                    
+                    // 2. Cari Transaksi Terakhir di log_transaksi
+                    db.ref('log_transaksi/' + keyFound).limitToLast(1).once('value', tSnap => {
+                        if(tSnap.exists()) {
+                            tSnap.forEach(t => tampilkanDetail(t.val()));
+                        } else {
+                            document.getElementById('listPesanan').innerHTML = 
+                                `<p class="text-center text-red-500 font-bold py-4">BELUM ADA TRANSAKSI</p>`;
+                        }
+                    });
+                } else {
+                    // DIAGNOSA JIKA TIDAK KETEMU
+                    db.ref('users').limitToFirst(3).once('value', dSnap => {
+                        let contoh = [];
+                        dSnap.forEach(d => { contoh.push(d.key) });
+                        alert("❌ ID: " + idBersih + " Tidak Terdaftar.\n\nContoh ID di Database:\n" + contoh.join("\n"));
+                        resetPemeriksaan();
+                    });
+                }
             });
         }
 
@@ -121,25 +130,24 @@
             const list = document.getElementById('listPesanan');
             list.innerHTML = "";
             
-            // Jika rincian belanja Bapak berupa object atau array
-            if (trx.rincian && Array.isArray(trx.rincian)) {
-                trx.rincian.forEach(item => {
-                    list.innerHTML += `
-                        <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-1">
-                            <span class="text-xs font-bold text-slate-700 uppercase">${item.nama}</span>
-                            <span class="text-xs font-black text-indigo-600">x${item.qty}</span>
-                        </div>
-                    `;
-                });
-            } else if (typeof trx.rincian === 'string') {
-                // Jika rincian disimpan sebagai teks panjang
-                list.innerHTML = `<p class="text-[11px] font-bold text-slate-600 uppercase leading-relaxed">${trx.rincian}</p>`;
+            // Cek apakah rincian ada
+            if (trx.rincian) {
+                if (Array.isArray(trx.rincian)) {
+                    trx.rincian.forEach(item => {
+                        list.innerHTML += `
+                            <div class="flex justify-between items-center border-b border-dashed border-slate-200 pb-1">
+                                <span class="text-xs font-bold text-slate-700 uppercase">${item.nama}</span>
+                                <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2 rounded-lg">x${item.qty}</span>
+                            </div>`;
+                    });
+                } else {
+                    list.innerHTML = `<p class="text-[11px] font-bold text-slate-600 uppercase leading-relaxed text-center py-2">${trx.rincian}</p>`;
+                }
             } else {
-                list.innerHTML = `<p class="text-[10px] text-red-500 italic text-center">Detail barang tidak tersedia (Hanya nominal).</p>`;
+                list.innerHTML = `<p class="text-[10px] text-red-500 italic text-center py-2">Rincian barang tidak ditemukan di log.</p>`;
             }
 
             document.getElementById('totalBayar').innerText = "Rp " + (trx.total ? trx.total.toLocaleString() : "0");
-            document.getElementById('resultArea').classList.remove('hidden');
         }
 
         function resetPemeriksaan() {
@@ -148,7 +156,7 @@
             document.getElementById('listPesanan').innerHTML = "";
         }
 
-        // Jalankan scanner otomatis saat masuk
+        // Jalankan scanner otomatis
         startScanner();
     </script>
 </body>
