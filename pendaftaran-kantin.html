@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Siswa - E-Kantin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-5 font-sans">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-3xl shadow-lg border-t-8 border-indigo-600">
+        <h1 class="text-2xl font-black text-indigo-900 mb-6 text-center uppercase">Registrasi Kartu</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">ID Kartu (Scan/Ketik)</label>
+                <input id="idInput" type="text" placeholder="Scan Kartu..." class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-indigo-600">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama Siswa</label>
+                <input id="namaInput" type="text" placeholder="Ketik Nama..." class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold uppercase">
+            </div>
+            <button onclick="simpanSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                AKTIFKAN KARTU
+            </button>
+        </div>
+        <p id="pesan" class="mt-4 text-center text-sm font-bold"></p>
+        <button onclick="window.location.href='verifikasi-belanja.html'" class="w-full mt-4 text-slate-400 text-[10px] font-bold uppercase underline">Buka Halaman Pemeriksa</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXt0gEgczYD1jQ9OhNk5FGN8CePIFaSYw",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function simpanSiswa() {
+            const id = document.getElementById('idInput').value.trim();
+            const nama = document.getElementById('namaInput').value.trim();
+            const pesan = document.getElementById('pesan');
+
+            if(id && nama) {
+                db.ref('users/' + id).set({
+                    nama: nama,
+                    status: "Aktif",
+                    tanggal_daftar: new Date().toLocaleDateString('id-ID')
+                }).then(() => {
+                    pesan.className = "mt-4 text-center text-sm font-bold text-emerald-600";
+                    pesan.innerText = "✅ " + nama + " BERHASIL DIDAFTARKAN!";
+                    document.getElementById('idInput').value = "";
+                    document.getElementById('namaInput').value = "";
+                }).catch(err => {
+                    alert("Gagal simpan: " + err.message);
+                });
+            } else {
+                alert("ID dan Nama tidak boleh kosong!");
+            }
+        }
+    </script>
+</body>
+</html>
