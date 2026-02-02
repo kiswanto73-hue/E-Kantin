@@ -32,7 +32,7 @@
         <div id="resultArea" class="hidden">
             <div class="bg-white p-6 rounded-[2rem] shadow-2xl border-t-8 border-emerald-500">
                 <div class="text-center mb-4">
-                    <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase leading-none">Mencari...</h2>
+                    <h2 id="namaSiswa" class="text-xl font-black text-indigo-900 uppercase leading-none">Mengecek...</h2>
                     <p id="idSiswa" class="text-[10px] font-bold text-slate-400 mt-2 tracking-widest uppercase">ID: -</p>
                 </div>
 
@@ -55,7 +55,7 @@
     </div>
 
     <script>
-        // --- KONFIGURASI FIREBASE E-KANTIN BAPAK ---
+        // --- KONFIGURASI KHUSUS E-KANTIN BAPAK (SUDAH DIPERBAIKI) ---
         const firebaseConfig = {
             apiKey: "AIzaSyBXt0gEgczYD1jQ9OhNk5FGN8CePIFaSYw", 
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -76,42 +76,48 @@
                 { facingMode: "environment" }, 
                 { fps: 15, qrbox: 250 },
                 (id) => {
+                    const idBersih = id.trim();
                     document.getElementById('scanMsg').classList.add('hidden');
-                    cariRiwayat(id.trim());
+                    cariRiwayat(idBersih);
                 }
             ).catch(err => { console.error("Kamera Error:", err); });
         }
 
         function cariRiwayat(id) {
-            const idBersih = id.trim();
-            console.log("Mencari ID:", idBersih);
-            
+            console.log("Mencari ID:", id);
             document.getElementById('resultArea').classList.remove('hidden');
-            document.getElementById('namaSiswa').innerText = "Mengecek...";
+            document.getElementById('namaSiswa').innerText = "Mengecek Database...";
 
-            // LANGKAH 1: Ambil data dari folder 'users' (Project E-Kantin)
-            db.ref('users/' + idBersih).once('value').then(snap => {
+            // LANGKAH 1: Cari User di folder 'users'
+            db.ref('users/' + id).once('value').then(snap => {
                 const user = snap.val();
 
                 if (user) {
                     document.getElementById('namaSiswa').innerText = user.nama;
-                    document.getElementById('idSiswa').innerText = "ID: " + idBersih;
+                    document.getElementById('idSiswa').innerText = "ID: " + id;
                     
-                    // LANGKAH 2: Cari Riwayat Belanja Terakhir
-                    db.ref('log_transaksi/' + idBersih).limitToLast(1).once('value', tSnap => {
+                    // LANGKAH 2: Cari Riwayat di folder 'log_transaksi'
+                    db.ref('log_transaksi/' + id).limitToLast(1).once('value', tSnap => {
                         if (tSnap.exists()) {
                             tSnap.forEach(t => tampilkanDetail(t.val()));
                         } else {
                             document.getElementById('listPesanan').innerHTML = 
-                                `<p class="text-center text-red-500 font-bold py-4 uppercase text-[10px]">Data Ada, Tapi Belum Ada Transaksi.</p>`;
+                                `<p class="text-center text-red-500 font-bold py-4 uppercase text-[10px]">Data Ada, Tapi Belum Ada Riwayat Belanja.</p>`;
                         }
                     });
                 } else {
-                    alert("❌ ID [" + idBersih + "] Tidak Terdaftar di E-Kantin!\n\nPastikan ID sudah diinput di menu pendaftaran.");
-                    resetPemeriksaan();
+                    // DIAGNOSA OTOMATIS JIKA TIDAK KETEMU
+                    db.ref('users').limitToFirst(1).once('value', testSnap => {
+                        if (!testSnap.exists()) {
+                            alert("❌ DATABASE KOSONG\nSistem berhasil terhubung ke Firebase e-kantin-91f0c, tapi folder 'users' tidak ada isinya.");
+                        } else {
+                            alert("❌ ID [" + id + "] Tidak Terdaftar.\nSilakan cek kembali di menu input siswa.");
+                        }
+                        resetPemeriksaan();
+                    });
                 }
             }).catch(err => {
-                alert("🔥 Masalah Koneksi: " + err.message);
+                alert("🔥 Kesalahan Koneksi: " + err.message);
             });
         }
 
@@ -119,7 +125,7 @@
             const list = document.getElementById('listPesanan');
             list.innerHTML = "";
             
-            // Cek rincian barang (Mendukung Format Array maupun String)
+            // Cek rincian barang
             if (trx.rincian) {
                 if (Array.isArray(trx.rincian)) {
                     trx.rincian.forEach(item => {
@@ -130,11 +136,10 @@
                             </div>`;
                     });
                 } else {
-                    // Jika rincian berbentuk teks panjang
                     list.innerHTML = `<p class="text-[11px] font-bold text-slate-600 uppercase text-center py-2">${trx.rincian}</p>`;
                 }
             } else {
-                list.innerHTML = `<p class="text-[10px] text-red-400 italic text-center py-2">Detail barang tidak tersedia.</p>`;
+                list.innerHTML = `<p class="text-[10px] text-red-400 italic text-center py-2">Hanya tercatat total belanja (Rincian item kosong).</p>`;
             }
 
             document.getElementById('totalBayar').innerText = "Rp " + (trx.total ? trx.total.toLocaleString() : "0");
@@ -146,7 +151,6 @@
             document.getElementById('listPesanan').innerHTML = "";
         }
 
-        // Start otomatis
         startScanner();
     </script>
 </body>
