@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOP UP SALDO - E-Kantin</title>
+    <title>KEUANGAN - E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,16 +13,16 @@
 
     <div class="max-w-md mx-auto p-4">
         <div class="bg-emerald-600 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 border-b-8 border-emerald-800">
-            <h1 class="text-xl font-black italic uppercase tracking-tighter">Top Up Saldo 💰</h1>
-            <p class="text-[10px] font-bold opacity-80 uppercase">Isi Ulang Saldo Siswa Real-Time</p>
+            <h1 class="text-xl font-black italic uppercase tracking-tighter text-center">Keuangan Siswa 💰</h1>
+            <p class="text-[10px] font-bold opacity-80 uppercase text-center">Top Up & Tarik Saldo Real-Time</p>
         </div>
 
-        <div class="bg-white p-4 rounded-[2.5rem] shadow-sm mb-6 border border-emerald-50">
+        <div id="scannerContainer" class="bg-white p-4 rounded-[2.5rem] shadow-sm mb-6 border border-emerald-50">
             <div id="reader" class="rounded-[2rem] overflow-hidden border-4 border-emerald-50 mb-4"></div>
             <p class="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Arahkan Barcode ID Siswa ke Kamera</p>
         </div>
 
-        <div id="depositForm" class="hidden space-y-4 animate-bounce-in">
+        <div id="depositForm" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-[2.5rem] shadow-lg border-2 border-emerald-500">
                 <div class="text-center mb-4">
                     <h2 id="namaSiswa" class="text-lg font-black text-indigo-900 uppercase">NAMA SISWA</h2>
@@ -31,17 +31,23 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Nominal Top Up (Rp)</label>
-                        <input type="number" id="nominalTopUp" placeholder="Contoh: 50000" 
-                            class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xl text-center text-emerald-700 outline-none focus:ring-4 ring-emerald-100 transition-all">
+                        <label class="text-[8px] font-black text-slate-400 uppercase ml-2">Nominal (Rp)</label>
+                        <input type="number" id="nominalAksi" placeholder="Contoh: 10000" 
+                            class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xl text-center text-indigo-700 outline-none focus:ring-4 ring-emerald-100 transition-all">
                     </div>
 
-                    <button onclick="prosesTopUp()" 
-                        class="w-full bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-emerald-600 active:scale-95 transition-all uppercase text-xs tracking-widest">
-                        Konfirmasi Top Up ✅
-                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="prosesTransaksi('TOPUP')" 
+                            class="bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-emerald-600 active:scale-95 transition-all uppercase text-[10px]">
+                            Isi Saldo ✅
+                        </button>
+                        <button onclick="prosesTransaksi('TARIK')" 
+                            class="bg-orange-500 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-orange-600 active:scale-95 transition-all uppercase text-[10px]">
+                            Tarik Tunai 💸
+                        </button>
+                    </div>
                     
-                    <button onclick="batalScan()" class="w-full text-slate-400 font-bold text-[9px] uppercase">Batal / Scan Ulang</button>
+                    <button onclick="batalScan()" class="w-full text-slate-400 font-bold text-[9px] uppercase mt-2">Batal / Scan Ulang</button>
                 </div>
             </div>
         </div>
@@ -69,7 +75,6 @@
         let currentWA = "";
         let scanner = new Html5Qrcode("reader");
 
-        // Jalankan Scanner Otomatis
         function startScanner() {
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (id) => {
                 cariSiswa(id.trim());
@@ -88,7 +93,7 @@
                     document.getElementById('namaSiswa').innerText = currentNama;
                     document.getElementById('saldoSekarang').innerText = "Saldo Saat Ini: Rp " + currentSaldo.toLocaleString();
                     document.getElementById('depositForm').classList.remove('hidden');
-                    document.getElementById('reader').classList.add('hidden');
+                    document.getElementById('scannerContainer').classList.add('hidden');
                     scanner.stop();
                 } else {
                     alert("ID Siswa tidak ditemukan!");
@@ -96,38 +101,51 @@
             });
         }
 
-        function prosesTopUp() {
-            const nominal = parseInt(document.getElementById('nominalTopUp').value);
+        function prosesTransaksi(tipe) {
+            const nominal = parseInt(document.getElementById('nominalAksi').value);
             if (!nominal || nominal <= 0) return alert("Masukkan nominal yang benar!");
 
-            const saldoBaru = currentSaldo + nominal;
+            let saldoBaru;
+            let pesanWA;
+            let statusItem;
+
+            if (tipe === 'TOPUP') {
+                saldoBaru = currentSaldo + nominal;
+                statusItem = "TOP UP SALDO";
+                pesanWA = `*TOP UP BERHASIL 💰*\n\nAlhamdulillah, Saldo Ananda *${currentNama}* telah bertambah sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Saldo Sekarang: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SD Indonesia Hebat_`;
+            } else {
+                if (nominal > currentSaldo) return alert("Saldo tidak mencukupi untuk penarikan ini!");
+                saldoBaru = currentSaldo - nominal;
+                statusItem = "TARIK TUNAI";
+                pesanWA = `*PENARIKAN BERHASIL 💸*\n\nSaldo Ananda *${currentNama}* telah ditarik sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SD Indonesia Hebat_`;
+            }
+
             const waktu = new Date().toLocaleString('id-ID');
 
-            // 1. Update Saldo ke Firebase
+            // 1. Update Saldo
             db.ref('kantin_users/' + currentIdSiswa + '/saldo').set(saldoBaru).then(() => {
                 
-                // 2. Catat di Laporan (sebagai Deposit)
+                // 2. Catat Laporan
                 db.ref('kantin_laporan').push({
                     idSiswa: currentIdSiswa,
                     namaSiswa: currentNama,
                     total: nominal,
-                    item: "TOP UP SALDO",
+                    item: statusItem,
                     stan: "ADMIN TABUNGAN",
                     waktu: waktu
                 });
 
-                // 3. Kirim WA Konfirmasi ke Orang Tua
+                // 3. Kirim WA
                 if (currentWA) {
-                    const pesan = `*TOP UP BERHASIL 💰*\n\nAlhamdulillah, Saldo Ananda *${currentNama}* telah bertambah sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Saldo Sekarang: Rp ${saldoBaru.toLocaleString()}*\nWaktu: ${waktu}\n\n_E-Kantin SD Indonesia Hebat_`;
                     fetch('https://api.fonnte.com/send', {
                         method: 'POST',
                         headers: { 'Authorization': FONNTE_TOKEN },
-                        body: new URLSearchParams({ 'target': currentWA, 'message': pesan })
+                        body: new URLSearchParams({ 'target': currentWA, 'message': pesanWA })
                     });
                 }
 
-                alert("✅ BERHASIL!\nSaldo " + currentNama + " sekarang: Rp " + saldoBaru.toLocaleString());
-                location.reload(); // Refresh untuk scan berikutnya
+                alert(`✅ ${statusItem} BERHASIL!\nSaldo sekarang: Rp ${saldoBaru.toLocaleString()}`);
+                location.reload();
             });
         }
 
