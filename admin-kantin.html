@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pusat Kendali & Admin E-Kantin</title>
+    <title>Pusat Kendali & Admin E-Kantin - SDN 165 TJB</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#312e81">
 
@@ -23,7 +23,7 @@
                 <div class="bg-white/10 p-3 rounded-2xl text-xl">📊</div>
                 <div>
                     <h1 class="text-xl font-black italic uppercase leading-none">PUSAT KENDALI E-KANTIN</h1>
-                    <p class="text-[10px] font-bold text-indigo-300 uppercase mt-1">Monitoring, Manajemen & Log Rinci</p>
+                    <p class="text-[10px] font-bold text-indigo-300 uppercase mt-1">SDN 165 Tanjung Jabung Barat</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -49,7 +49,7 @@
                 <div class="grid grid-cols-1 gap-2">
                     <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Excel Transaksi 📄</button>
                     <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md hover:bg-emerald-600">Excel Saldo 💰</button>
-                    <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Cetak QR 🖨️</button>
+                    <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Cetak Kartu Portrait 🖨️</button>
                     <button onclick="resetTransaksi()" class="text-red-500 text-[8px] font-bold uppercase italic">Reset Transaksi</button>
                 </div>
             </div>
@@ -112,6 +112,7 @@
     </div>
 
     <script>
+        // Konfigurasi Firebase (Tetap sesuai milik Bapak)
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -193,7 +194,6 @@
                     }
                 });
                 document.getElementById('totalOmzet').innerText = "Rp " + totalSmua.toLocaleString();
-                
                 const breakEl = document.getElementById('breakdownStan'); breakEl.innerHTML = "";
                 Object.keys(stanGrup).forEach(s => { 
                     breakEl.innerHTML += `<div class="flex justify-between border-b border-slate-50"><span>${s}</span><span>Rp ${stanGrup[s].toLocaleString()}</span></div>`; 
@@ -212,6 +212,78 @@
             });
         }
 
+        // FUNGSI BARU: CETAK KARTU INTEGRASI PORTRAIT
+        function cetakKolektif() {
+            const filter = document.getElementById('filterKelas').value;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Cetak Kartu Integrasi - SDN 165 TJB</title>
+                    <style>
+                        @page { size: A4; margin: 5mm; }
+                        body { font-family: sans-serif; margin: 0; background: #f0f0f0; }
+                        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; }
+                        .card { 
+                            width: 50mm; height: 82mm; background: white; border: 1.5px solid #312e81;
+                            border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
+                            align-items: center; position: relative; page-break-inside: avoid;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .header { background: #312e81; color: white; width: 100%; padding: 8px 0; text-align: center; }
+                        .header h4 { margin: 0; font-size: 7px; text-transform: uppercase; }
+                        .header h2 { margin: 0; font-size: 9px; font-weight: 900; }
+                        .badge { background: #fbbf24; color: #1e1b4b; width: 100%; font-size: 8px; font-weight: 900; text-align: center; padding: 3px 0; }
+                        .photo-box { width: 20mm; height: 25mm; border: 1px dashed #ccc; margin: 8px 0; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #aaa; background: #f9f9f9; }
+                        .info { text-align: center; padding: 0 5px; margin-bottom: 5px; }
+                        .info h3 { margin: 0; font-size: 10px; color: #312e81; text-transform: uppercase; height: 22px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+                        .info p { margin: 2px 0; font-size: 8px; font-weight: bold; }
+                        .qr-area { padding: 5px; background: white; border: 1px solid #eee; border-radius: 5px; }
+                        .footer { font-size: 6px; color: #999; margin-top: auto; margin-bottom: 5px; font-style: italic; }
+                        @media print { body { background: none; } .card { box-shadow: none; border: 1px solid #312e81; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="grid">
+            `);
+
+            db.ref('kantin_users').once('value', snap => {
+                snap.forEach(s => {
+                    const d = s.val();
+                    if(filter === "SEMUA" || d.kelas === filter) {
+                        win.document.write(`
+                            <div class="card">
+                                <div class="header">
+                                    <h4>SDN 165</h4>
+                                    <h2>TANJUNG JABUNG BARAT</h2>
+                                </div>
+                                <div class="badge">KARTU INTEGRASI</div>
+                                <div class="photo-box">TEMPAT FOTO 2x3</div>
+                                <div class="info">
+                                    <h3>${d.nama}</h3>
+                                    <p>${d.kelas}</p>
+                                    <p style="color: #6366f1; font-size: 7px;">ID: ${d.id}</p>
+                                </div>
+                                <div class="qr-area"><div id="qr-${d.id}"></div></div>
+                                <div class="footer">E-Kantin & Perpustakaan</div>
+                            </div>
+                        `);
+                    }
+                });
+
+                win.document.write(`</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>`);
+                snap.forEach(s => {
+                    const d = s.val();
+                    if(filter === "SEMUA" || d.kelas === filter) {
+                        win.document.write(`new QRCode(document.getElementById("qr-${d.id}"), {text:"${d.id}", width:55, height:55});`);
+                    }
+                });
+                win.document.write(`setTimeout(()=>{window.print();},1500);<\/script></body></html>`);
+                win.document.close();
+            });
+        }
+
+        // Fungsi bantu lainnya (Tetap Sesuai Bapak)
         function downloadSaldo() {
             const filterKls = document.getElementById('filterKelas').value;
             const listData = [];
@@ -219,13 +291,7 @@
                 snap.forEach(s => {
                     const d = s.val();
                     if (filterKls === "SEMUA" || d.kelas === filterKls) {
-                        listData.push({
-                            'ID KARTU': d.id,
-                            'NAMA SISWA': d.nama,
-                            'KELAS': d.kelas,
-                            'SALDO': d.saldo,
-                            'WA': d.wa || '-'
-                        });
+                        listData.push({ 'ID KARTU': d.id, 'NAMA SISWA': d.nama, 'KELAS': d.kelas, 'SALDO': d.saldo, 'WA': d.wa || '-' });
                     }
                 });
                 if(listData.length > 0) {
@@ -237,6 +303,12 @@
             });
         }
 
+        function downloadLaporan() { 
+            const tgl = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+            const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); 
+            XLSX.writeFile(wb, `Laporan_Rinci_Kantin_${tgl}.xlsx`); 
+        }
+
         function isiForm(id, nama, kelas, saldo, wa) { 
             document.getElementById('idSiswa').value = id; 
             document.getElementById('namaSiswa').value = nama; 
@@ -244,35 +316,6 @@
             document.getElementById('saldoSiswa').value = saldo; 
             document.getElementById('waSiswa').value = wa; 
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        }
-
-        function cetakKolektif() {
-            const filter = document.getElementById('filterKelas').value;
-            const win = window.open('', '_blank');
-            win.document.write('<html><head><title>Cetak Kartu</title><style>body{font-family:sans-serif;margin:10mm}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.card{width:85mm;height:50mm;border:2px solid #333;padding:10px;border-radius:10px;display:flex;align-items:center;page-break-inside:avoid;margin-bottom:10px}.qr{width:80px;height:80px}.info{flex:1;text-align:right;margin-left:10px}h3{margin:0;font-size:14px;text-transform:uppercase}p{margin:2px 0;font-size:10px}</style></head><body><div class="grid">');
-            db.ref('kantin_users').once('value', snap => {
-                snap.forEach(s => {
-                    const d = s.val();
-                    if(filter === "SEMUA" || d.kelas === filter) {
-                        win.document.write(`<div class="card"><div id="qr-${d.id}"></div><div class="info"><p>E-KANTIN</p><h3>${d.nama}</h3><p>KELAS: ${d.kelas}</p><p>ID: ${d.id}</p></div></div>`);
-                    }
-                });
-                win.document.write('</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>');
-                snap.forEach(s => {
-                    const d = s.val();
-                    if(filter === "SEMUA" || d.kelas === filter) {
-                        win.document.write(`new QRCode(document.getElementById("qr-${d.id}"), {text:"${d.id}", width:80, height:80});`);
-                    }
-                });
-                win.document.write('setTimeout(()=>{window.print();},1500);<\/script></body></html>');
-                win.document.close();
-            });
-        }
-
-        function downloadLaporan() { 
-            const tgl = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-            const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); 
-            XLSX.writeFile(wb, `Laporan_Rinci_Kantin_${tgl}.xlsx`); 
         }
 
         function resetTransaksi() { if(confirm("Hapus semua riwayat transaksi?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
