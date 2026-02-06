@@ -88,7 +88,8 @@
                                 <tr class="text-slate-400 border-b">
                                     <th class="p-3">WAKTU</th>
                                     <th>SISWA</th>
-                                    <th>KELAS</th> <th>DETAIL ITEM</th>
+                                    <th>KELAS</th>
+                                    <th>DETAIL ITEM</th>
                                     <th class="text-right p-3">TOTAL</th>
                                 </tr>
                             </thead>
@@ -131,11 +132,10 @@
 
         auth.onAuthStateChanged(user => {
             if (user) {
-                console.log("Sudah login sebagai:", user.email);
                 loadData();
             } else {
                 auth.signInWithEmailAndPassword("sdn169.cintadamai@gmail.com", "Cintadama1")
-                    .catch(err => alert("Gagal login otomatis: " + err.message));
+                    .catch(err => console.error("Login gagal:", err.message));
             }
         });
 
@@ -158,6 +158,7 @@
             const filterKls = document.getElementById('filterKelas').value;
             const bulanSekarang = new Date().toISOString().substring(0, 7);
             
+            // Sync Daftar Siswa & Total Saldo
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
@@ -182,6 +183,7 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
+            // Sync Riwayat Transaksi
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
@@ -190,14 +192,18 @@
                     const pts = d.waktu.split(',')[0].split('/');
                     const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
                     const bulanData = tglData.substring(0, 7);
+                    
                     if((filterTgl && tglData === filterTgl) || (!filterTgl && bulanData === bulanSekarang)) {
                         totalSmua += d.total;
                         stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
-                        // Penambahan kolom KELAS di sini
+                        
+                        // Kolom KELAS: mencoba mengambil field 'kelas' atau 'kelasSiswa'
+                        const tampilKelas = d.kelas || d.kelasSiswa || '-';
+                        
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td>${d.namaSiswa}</td>
-                            <td class="text-slate-500 font-bold">${d.kelasSiswa || '-'}</td>
+                            <td class="text-slate-500 font-bold">${tampilKelas}</td>
                             <td class="text-indigo-600 font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
                             <td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td>
                         </tr>` + body.innerHTML;
@@ -222,6 +228,28 @@
             });
         }
 
+        function downloadSaldo() {
+            const filterKls = document.getElementById('filterKelas').value;
+            const listData = [];
+            db.ref('kantin_users').once('value', snap => {
+                snap.forEach(s => {
+                    const d = s.val();
+                    if (filterKls === "SEMUA" || d.kelas === filterKls) {
+                        listData.push({ 'ID': d.id, 'NAMA': d.nama, 'KELAS': d.kelas, 'SALDO': d.saldo });
+                    }
+                });
+                const ws = XLSX.utils.json_to_sheet(listData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Saldo");
+                XLSX.writeFile(wb, `Saldo_${filterKls}.xlsx`);
+            });
+        }
+
+        function downloadLaporan() { 
+            const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); 
+            XLSX.writeFile(wb, `Laporan_Transaksi.xlsx`); 
+        }
+
         function cetakKolektif() {
             const filter = document.getElementById('filterKelas').value;
             const win = window.open('', '_blank');
@@ -243,28 +271,6 @@
                 win.document.write(`setTimeout(()=>{window.print();},1500);<\/script></body></html>`);
                 win.document.close();
             });
-        }
-
-        function downloadSaldo() {
-            const filterKls = document.getElementById('filterKelas').value;
-            const listData = [];
-            db.ref('kantin_users').once('value', snap => {
-                snap.forEach(s => {
-                    const d = s.val();
-                    if (filterKls === "SEMUA" || d.kelas === filterKls) {
-                        listData.push({ 'ID': d.id, 'NAMA': d.nama, 'KELAS': d.kelas, 'SALDO': d.saldo });
-                    }
-                });
-                const ws = XLSX.utils.json_to_sheet(listData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Saldo");
-                XLSX.writeFile(wb, `Saldo_${filterKls}.xlsx`);
-            });
-        }
-
-        function downloadLaporan() { 
-            const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); 
-            XLSX.writeFile(wb, `Laporan_Transaksi.xlsx`); 
         }
 
         function isiForm(id, nama, kelas, saldo, wa) { 
