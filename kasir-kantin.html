@@ -58,7 +58,6 @@
         const db = firebase.database();
 
         let cart = []; let total = 0;
-        // TOKEN FONNTE TERBARU DISISIPKAN DISINI
         const FONNTE_TOKEN = "eRiRwGfU96GqAyaMXM7Q"; 
 
         db.ref('kantin_menus').on('value', snap => {
@@ -124,7 +123,6 @@
 
                 db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
 
-                // SIMPAN DENGAN FIELD KELAS (Dukungan penuh untuk Admin)
                 db.ref('kantin_laporan').push({ 
                     idSiswa, 
                     namaSiswa: user.nama, 
@@ -136,13 +134,25 @@
                 });
 
                 if (user.wa) {
+                    // --- LOGIKA PEMBERSIH NOMOR WA OTOMATIS ---
+                    let targetWA = user.wa.replace(/[^0-9]/g, ''); // Hapus semua karakter kecuali angka
+                    if (targetWA.startsWith('0')) {
+                        targetWA = '62' + targetWA.substring(1); // Ubah 08xxx jadi 628xxx
+                    }
+                    // ------------------------------------------
+
                     const pesan = `*STRUK DIGITAL E-KANTIN*\n\nAnanda: *${user.nama}*\n\n*Detail Belanja:*\n${detailItems}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_Terima kasih telah berbelanja_`;
+                    
                     fetch('https://api.fonnte.com/send', { 
                         method: 'POST', 
                         headers: { 'Authorization': FONNTE_TOKEN }, 
-                        body: new URLSearchParams({ 'target': user.wa, 'message': pesan }) 
-                    });
+                        body: new URLSearchParams({ 'target': targetWA, 'message': pesan }) 
+                    })
+                    .then(response => response.json())
+                    .then(res => console.log("Fonnte Response:", res))
+                    .catch(err => console.error("Fonnte Error:", err));
                 }
+                
                 alert("✅ BERHASIL!\nSiswa: " + user.nama + "\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
                 resetCart();
             });
