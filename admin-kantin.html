@@ -86,7 +86,10 @@
                         <table class="w-full text-[10px] text-left" id="tabelLaporan">
                             <thead class="bg-slate-50 sticky top-0">
                                 <tr class="text-slate-400 border-b">
-                                    <th class="p-3">WAKTU</th><th>SISWA</th><th>DETAIL ITEM</th><th class="text-right p-3">TOTAL</th>
+                                    <th class="p-3">WAKTU</th>
+                                    <th>SISWA</th>
+                                    <th>KELAS</th> <th>DETAIL ITEM</th>
+                                    <th class="text-right p-3">TOTAL</th>
                                 </tr>
                             </thead>
                             <tbody id="logTableBody" class="divide-y divide-slate-50 font-bold italic text-slate-700"></tbody>
@@ -126,21 +129,13 @@
         const auth = firebase.auth();
         let myChart = null;
 
-        // --- SISTEM LOGIN OTOMATIS FIX ---
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("Sudah login sebagai:", user.email);
                 loadData();
             } else {
-                console.log("Mencoba login otomatis...");
                 auth.signInWithEmailAndPassword("sdn169.cintadamai@gmail.com", "Cintadama1")
-                    .then(() => {
-                        console.log("Login Otomatis Berhasil!");
-                    })
-                    .catch(err => {
-                        console.error("Login gagal:", err.message);
-                        alert("Gagal login otomatis, periksa koneksi atau kredensial di Firebase.");
-                    });
+                    .catch(err => alert("Gagal login otomatis: " + err.message));
             }
         });
 
@@ -198,9 +193,11 @@
                     if((filterTgl && tglData === filterTgl) || (!filterTgl && bulanData === bulanSekarang)) {
                         totalSmua += d.total;
                         stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
+                        // Penambahan kolom KELAS di sini
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td>${d.namaSiswa}</td>
+                            <td class="text-slate-500 font-bold">${d.kelasSiswa || '-'}</td>
                             <td class="text-indigo-600 font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
                             <td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td>
                         </tr>` + body.innerHTML;
@@ -228,52 +225,14 @@
         function cetakKolektif() {
             const filter = document.getElementById('filterKelas').value;
             const win = window.open('', '_blank');
-            win.document.write(`
-                <html>
-                <head>
-                    <title>Cetak Kartu Portrait</title>
-                    <style>
-                        @page { size: A4; margin: 5mm; }
-                        body { font-family: sans-serif; margin: 0; }
-                        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; }
-                        .card { 
-                            width: 50mm; height: 82mm; background: white; border: 1.5px solid #312e81;
-                            border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
-                            align-items: center; position: relative; page-break-inside: avoid;
-                        }
-                        .header { background: #312e81; color: white; width: 100%; padding: 8px 0; text-align: center; }
-                        .header h2 { margin: 0; font-size: 9px; font-weight: 900; }
-                        .badge { background: #fbbf24; color: #1e1b4b; width: 100%; font-size: 8px; font-weight: 900; text-align: center; padding: 3px 0; }
-                        .photo-box { width: 20mm; height: 25mm; border: 1px dashed #ccc; margin: 8px 0; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #aaa; background: #f9f9f9; }
-                        .info h3 { margin: 0; font-size: 10px; color: #312e81; text-transform: uppercase; }
-                        .info p { margin: 2px 0; font-size: 8px; font-weight: bold; text-align: center; }
-                        .qr-area { padding: 5px; }
-                        .footer { font-size: 6px; color: #999; margin-top: auto; margin-bottom: 5px; }
-                    </style>
-                </head>
-                <body><div class="grid">
-            `);
-
+            win.document.write(`<html><head><title>Cetak Kartu</title><style>@page { size: A4; margin: 5mm; } body { font-family: sans-serif; margin: 0; } .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px; } .card { width: 50mm; height: 82mm; background: white; border: 1.5px solid #312e81; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; position: relative; page-break-inside: avoid; } .header { background: #312e81; color: white; width: 100%; padding: 8px 0; text-align: center; } .header h2 { margin: 0; font-size: 9px; font-weight: 900; } .badge { background: #fbbf24; color: #1e1b4b; width: 100%; font-size: 8px; font-weight: 900; text-align: center; padding: 3px 0; } .photo-box { width: 20mm; height: 25mm; border: 1px dashed #ccc; margin: 8px 0; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #aaa; background: #f9f9f9; } .info h3 { margin: 0; font-size: 10px; color: #312e81; text-transform: uppercase; } .info p { margin: 2px 0; font-size: 8px; font-weight: bold; text-align: center; } .qr-area { padding: 5px; } .footer { font-size: 6px; color: #999; margin-top: auto; margin-bottom: 5px; }</style></head><body><div class="grid">`);
             db.ref('kantin_users').once('value', snap => {
                 snap.forEach(s => {
                     const d = s.val();
                     if(filter === "SEMUA" || d.kelas === filter) {
-                        win.document.write(`
-                            <div class="card">
-                                <div class="header"><h2>SDN 165 TJB</h2></div>
-                                <div class="badge">KARTU INTEGRASI</div>
-                                <div class="photo-box">FOTO 2x3</div>
-                                <div class="info">
-                                    <h3>${d.nama}</h3>
-                                    <p>${d.kelas}</p>
-                                </div>
-                                <div class="qr-area"><div id="qr-${d.id}"></div></div>
-                                <div class="footer">E-Kantin & Perpustakaan</div>
-                            </div>
-                        `);
+                        win.document.write(`<div class="card"><div class="header"><h2>SDN 165 TJB</h2></div><div class="badge">KARTU INTEGRASI</div><div class="photo-box">FOTO 2x3</div><div class="info"><h3>${d.nama}</h3><p>${d.kelas}</p></div><div class="qr-area"><div id="qr-${d.id}"></div></div><div class="footer">E-Kantin & Perpustakaan</div></div>`);
                     }
                 });
-
                 win.document.write(`</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>`);
                 snap.forEach(s => {
                     const d = s.val();
