@@ -4,18 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRO KASIR - E-Kantin</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#312e81">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen">
-
     <div class="max-w-5xl mx-auto p-4">
         <div class="flex justify-between items-center mb-6">
             <div class="bg-indigo-900 p-6 rounded-[2rem] text-white shadow-xl flex-1 mr-4 border-b-4 border-yellow-400">
@@ -27,23 +21,19 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2" id="menuContainer"></div>
-            
             <div class="lg:col-span-1">
                 <div class="bg-white p-6 rounded-[2rem] shadow-xl sticky top-4 border-t-8 border-indigo-600">
                     <h2 class="text-center font-black text-slate-400 text-[10px] mb-4 uppercase">Keranjang</h2>
                     <div id="cartItems" class="space-y-2 mb-4 max-h-[300px] overflow-y-auto italic"></div>
-                    
                     <div class="border-t-2 border-dashed py-4 mb-4">
                         <div class="flex justify-between items-center">
                             <span class="text-[10px] font-black text-slate-400 uppercase">Total</span>
                             <span id="totalHarga" class="text-2xl font-black text-indigo-600">Rp 0</span>
                         </div>
                     </div>
-
                     <div id="scannerArea" class="hidden mb-4">
                         <div id="reader" class="rounded-xl overflow-hidden border-4 border-indigo-50"></div>
                     </div>
-
                     <button id="btnCheckout" onclick="bukaScanner()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-xl shadow-lg uppercase text-xs">BAYAR SEKARANG ✅</button>
                     <button onclick="resetCart()" class="w-full mt-3 text-slate-300 font-bold text-[9px] uppercase">Kosongkan</button>
                 </div>
@@ -63,19 +53,17 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         let cart = []; let total = 0;
         const FONNTE_TOKEN = "4xNPsRSw3FPeUjR8cxXjaAT8xpKv"; 
 
-        // LOAD MENU (Real-time update stok di layar kasir)
         db.ref('kantin_menus').on('value', snap => {
             const container = document.getElementById('menuContainer'); container.innerHTML = "";
             snap.forEach(stanSnap => {
                 let html = `<div class="bg-white p-4 rounded-[2rem] shadow-sm mb-4"><h3 class="text-[10px] font-black text-indigo-500 uppercase mb-3 border-b pb-1">${stanSnap.key}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
                 stanSnap.forEach(mSnap => {
                     const m = mSnap.val();
-                    const habis = (m.stok_awal - (m.terjual || 0)) <= 0;
                     const sisa = (m.stok_awal - (m.terjual || 0));
+                    const habis = sisa <= 0;
                     html += `<button onclick="${habis ? "alert('Stok Habis!')" : `addToCart('${stanSnap.key}','${m.nama}',${m.harga},'${mSnap.key}')`}" class="${habis?'opacity-30 cursor-not-allowed':'hover:bg-indigo-50'} p-3 bg-slate-50 rounded-xl flex justify-between text-left italic font-bold"><div><p class="text-[11px] uppercase">${m.nama}</p><p class="text-[10px] text-emerald-600">Rp ${m.harga.toLocaleString()}</p></div><span class="text-[8px] text-slate-400 uppercase">Sisa: ${sisa < 0 ? 0 : sisa}</span></button>`;
                 });
                 container.innerHTML += html + `</div></div>`;
@@ -115,47 +103,26 @@
                 let detailItems = "";
                 let itemLog = [];
 
-                // 1. UPDATE STOK & TERJUAL SECARA OTOMATIS
                 cart.forEach(item => {
                     detailItems += `- ${item.nama} (Rp ${item.harga.toLocaleString()})\n`;
                     itemLog.push(item.nama);
-                    
                     const menuRef = db.ref(`kantin_menus/${item.stan}/${item.idMenu}`);
-                    menuRef.transaction(currentData => {
-                        if (currentData) {
-                            currentData.terjual = (currentData.terjual || 0) + 1;
-                            currentData.stok_akhir = currentData.stok_awal - currentData.terjual;
-                            // Update field stok lama agar tetap kompatibel
-                            currentData.stok = currentData.stok_akhir;
-                        }
-                        return currentData;
-                    });
+                    menuRef.transaction(c => { if(c){ c.terjual=(c.terjual||0)+1; c.stok_akhir=c.stok_awal-c.terjual; c.stok=c.stok_akhir; } return c; });
                 });
 
-                // 2. POTONG SALDO SISWA
                 db.ref('kantin_users/' + idSiswa + '/saldo').set(saldoBaru);
 
-                // 3. CATAT LAPORAN DETAIL
+                // SIMPAN DENGAN FIELD KELAS
                 db.ref('kantin_laporan').push({ 
-                    idSiswa, 
-                    namaSiswa: user.nama, 
-                    total, 
-                    item: itemLog.join(", "), 
-                    stan: "Multi-Stan", 
-                    waktu 
+                    idSiswa, namaSiswa: user.nama, kelas: user.kelas || '-', 
+                    total, item: itemLog.join(", "), stan: "Multi-Stan", waktu 
                 });
 
-                // 4. KIRIM WA OTOMATIS
                 if (user.wa) {
                     const pesan = `*STRUK DIGITAL E-KANTIN*\n\nAnanda: *${user.nama}*\n\n*Detail Belanja:*\n${detailItems}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_Terima kasih telah berbelanja_`;
-                    fetch('https://api.fonnte.com/send', {
-                        method: 'POST',
-                        headers: { 'Authorization': FONNTE_TOKEN },
-                        body: new URLSearchParams({ 'target': user.wa, 'message': pesan })
-                    });
+                    fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': FONNTE_TOKEN }, body: new URLSearchParams({ 'target': user.wa, 'message': pesan }) });
                 }
-
-                alert("✅ TRANSAKSI BERHASIL!\nSiswa: " + user.nama + "\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
+                alert("✅ BERHASIL!\nSisa Saldo: Rp " + saldoBaru.toLocaleString());
                 resetCart();
             });
         }
