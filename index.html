@@ -65,7 +65,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="text-[10px] font-black text-indigo-200 uppercase ml-4 mb-2 block">Email Admin</label>
-                    <input type="email" id="adm_email" placeholder="kiswanto73@guru.sd.belajar.id" class="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm outline-none focus:ring-2 ring-yellow-400 transition-all placeholder:opacity-30">
+                    <input type="email" id="adm_email" placeholder="contoh@gmail.com" class="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm outline-none focus:ring-2 ring-yellow-400 transition-all placeholder:opacity-30">
                 </div>
 
                 <div>
@@ -100,7 +100,11 @@
             const email = document.getElementById('adm_email').value.trim();
             const pass = document.getElementById('adm_pass').value.trim();
 
-            if (email === "kiswanto73@guru.sd.belajar.id" && pass === "Kis7384@") {
+            // Pengecekan Dua Akun
+            const isUser1 = (email === "kiswanto73@guru.sd.belajar.id" && pass === "Kis7384@");
+            const isUser2 = (email === "sdn169.cintadamai@gmail.com" && pass === "Cintadama1");
+
+            if (isUser1 || isUser2) {
                 sessionStorage.setItem("ownerLoggedIn", "true");
                 sessionStorage.setItem("portalLoggedIn", "true");
 
