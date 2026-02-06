@@ -112,7 +112,7 @@
     </div>
 
     <script>
-        // Konfigurasi Firebase (Tetap sesuai milik Bapak)
+        // Konfigurasi Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -127,7 +127,19 @@
         const auth = firebase.auth();
         let myChart = null;
 
-        auth.onAuthStateChanged(user => { if(!user) window.location.href="login.html"; });
+        // SISTEM LOGIN OTOMATIS
+        auth.onAuthStateChanged(user => { 
+            if(!user) {
+                // Mencoba login otomatis dengan kredensial yang Bapak berikan
+                auth.signInWithEmailAndPassword("sdn169.cintadamai@gmail.com", "Cintadama1")
+                .catch(error => {
+                    console.error("Login gagal:", error.message);
+                    window.location.href="login.html"; // Jika gagal total baru lempar ke login
+                });
+            } else {
+                loadData(); // Jika sudah login, load data
+            }
+        });
 
         function updateSiswa() {
             const id = document.getElementById('idSiswa').value.trim();
@@ -212,7 +224,6 @@
             });
         }
 
-        // FUNGSI BARU: CETAK KARTU INTEGRASI PORTRAIT
         function cetakKolektif() {
             const filter = document.getElementById('filterKelas').value;
             const win = window.open('', '_blank');
@@ -283,7 +294,6 @@
             });
         }
 
-        // Fungsi bantu lainnya (Tetap Sesuai Bapak)
         function downloadSaldo() {
             const filterKls = document.getElementById('filterKelas').value;
             const listData = [];
@@ -321,8 +331,6 @@
         function resetTransaksi() { if(confirm("Hapus semua riwayat transaksi?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
         function hapusSiswa(id) { if(confirm("Hapus data siswa ini?")) db.ref('kantin_users').child(id).remove(); }
         function logout() { auth.signOut().then(() => { window.location.href="index.html"; }); }
-        
-        loadData();
     </script>
 </body>
 </html>
