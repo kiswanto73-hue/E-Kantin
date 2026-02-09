@@ -79,7 +79,7 @@
             <div class="lg:col-span-8 space-y-6">
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm overflow-hidden border">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Pembelian Rinci</h3>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Pembelian (50 Terakhir)</h3>
                         <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-none">
                     </div>
                     <div class="overflow-x-auto max-h-[250px]">
@@ -156,9 +156,8 @@
         function loadData() {
             const filterTgl = document.getElementById('filterTanggal').value;
             const filterKls = document.getElementById('filterKelas').value;
-            const bulanSekarang = new Date().toISOString().substring(0, 7);
             
-            // Sync Daftar Siswa & Total Saldo
+            // Sync Daftar Siswa (Tetap Real-time)
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
@@ -183,21 +182,28 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
-            // Sync Riwayat Transaksi
-            db.ref('kantin_laporan').on('value', snap => {
+            // OPTIMASI LAPORAN: Gunakan once agar tidak ngelag saat data menumpuk
+            let laporanRef = db.ref('kantin_laporan');
+            
+            // Jika tidak ada filter tanggal, batasi hanya 50 data terakhir (Limit)
+            if (!filterTgl) {
+                laporanRef = laporanRef.limitToLast(50);
+            }
+
+            laporanRef.once('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
+                
                 snap.forEach(l => {
                     const d = l.val();
+                    // Parsing tanggal database (asumsi format DD/MM/YYYY)
                     const pts = d.waktu.split(',')[0].split('/');
                     const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
-                    const bulanData = tglData.substring(0, 7);
-                    
-                    if((filterTgl && tglData === filterTgl) || (!filterTgl && bulanData === bulanSekarang)) {
+
+                    // Logika Filter: Jika tanggal cocok ATAU tidak ada filter tanggal (ambil limit tadi)
+                    if (!filterTgl || tglData === filterTgl) {
                         totalSmua += d.total;
                         stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
-                        
-                        // Kolom KELAS: mencoba mengambil field 'kelas' atau 'kelasSiswa'
                         const tampilKelas = d.kelas || d.kelasSiswa || '-';
                         
                         body.innerHTML = `<tr>
@@ -209,6 +215,7 @@
                         </tr>` + body.innerHTML;
                     }
                 });
+                
                 document.getElementById('totalOmzet').innerText = "Rp " + totalSmua.toLocaleString();
                 const breakEl = document.getElementById('breakdownStan'); breakEl.innerHTML = "";
                 Object.keys(stanGrup).forEach(s => { 
@@ -282,7 +289,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
 
-        function resetTransaksi() { if(confirm("Hapus semua riwayat?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
+        function resetTransaksi() { if(confirm("Hapus semua riwayat? PERINGATAN: Ini akan mempercepat aplikasi secara total.")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
         function hapusSiswa(id) { if(confirm("Hapus siswa ini?")) db.ref('kantin_users').child(id).remove(); }
         function logout() { auth.signOut().then(() => { location.reload(); }); }
     </script>
