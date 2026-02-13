@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Demo E-Kantin - SDN 169</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .btn-menu:active { transform: scale(0.9); }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+    <header class="bg-emerald-700 text-white pt-8 pb-16 px-6 rounded-b-[3rem] shadow-xl relative">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-black italic tracking-tighter uppercase text-yellow-300">Demo E-Kantin Pro</h1>
+                <p class="text-[9px] font-bold opacity-70 tracking-widest uppercase">Eksplorasi Semua Fitur Tanpa Batas</p>
+            </div>
+            <div class="bg-red-500 text-[8px] font-black px-3 py-1 rounded-full animate-pulse uppercase">Mode Simulasi Aktif</div>
+        </div>
+    </header>
+
+    <nav class="max-w-md mx-auto px-4 -mt-8 relative z-10">
+        <div class="bg-white p-2 rounded-3xl shadow-xl flex justify-around border border-emerald-100">
+            <button onclick="openTab('kasir')" class="btn-menu p-3 flex flex-col items-center">
+                <span class="text-xl">🛒</span>
+                <span class="text-[8px] font-black uppercase mt-1">Kasir</span>
+            </button>
+            <button onclick="openTab('topup')" class="btn-menu p-3 flex flex-col items-center">
+                <span class="text-xl">💳</span>
+                <span class="text-[8px] font-black uppercase mt-1">Saldo</span>
+            </button>
+            <button onclick="openTab('stok')" class="btn-menu p-3 flex flex-col items-center">
+                <span class="text-xl">📦</span>
+                <span class="text-[8px] font-black uppercase mt-1">Stok</span>
+            </button>
+            <button onclick="openTab('laporan')" class="btn-menu p-3 flex flex-col items-center">
+                <span class="text-xl">📊</span>
+                <span class="text-[8px] font-black uppercase mt-1">Laporan</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-md mx-auto p-6">
+        
+        <section id="kasir" class="tab-content active space-y-4">
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm">
+                <h2 class="text-xs font-black uppercase mb-3 text-slate-400">Kasir Pintar (Scan QR)</h2>
+                <div class="aspect-square bg-slate-100 rounded-3xl mb-4 flex items-center justify-center border-4 border-dashed border-slate-200">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Kamera Scan Aktif (Simulasi)</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="simulasiBayar()" class="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase shadow-lg shadow-emerald-200">Bayar via Saldo 💸</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="topup" class="tab-content space-y-4">
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm text-center">
+                <h2 class="text-xs font-black uppercase mb-4 text-slate-400">Isi Saldo Siswa</h2>
+                <input type="number" placeholder="Nominal Rp..." class="w-full p-4 bg-slate-50 rounded-2xl mb-4 text-center font-black outline-none border-2 border-emerald-500/20">
+                <button onclick="alert('Saldo Berhasil Ditambah (Simulasi)')" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase">Proses Top Up 💎</button>
+            </div>
+        </section>
+
+        <section id="stok" class="tab-content space-y-4">
+            <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
+                <table class="w-full text-left text-[10px]">
+                    <thead class="bg-slate-50 font-black uppercase">
+                        <tr><th class="p-4">Menu</th><th class="p-4 text-center">Stok</th></tr>
+                    </thead>
+                    <tbody class="font-bold text-slate-600">
+                        <tr class="border-t">
+                            <td class="p-4">Nasi Kuning</td>
+                            <td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded">45 Porsi</span></td>
+                        </tr>
+                        <tr class="border-t">
+                            <td class="p-4">Teh Botol</td>
+                            <td class="p-4 text-center"><span class="bg-red-100 text-red-600 px-2 py-1 rounded">5 Btl</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="laporan" class="tab-content space-y-4">
+            <div class="bg-slate-900 text-white p-6 rounded-[2rem] shadow-xl">
+                <p class="text-[9px] font-black uppercase opacity-50">Omzet Hari Ini</p>
+                <h3 class="text-3xl font-black italic text-emerald-400">Rp 1.450.000</h3>
+                <div class="mt-4 pt-4 border-t border-white/10 flex justify-between">
+                    <span class="text-[9px] font-bold">54 Transaksi</span>
+                    <span class="text-[9px] font-bold text-emerald-400">▲ 12% dari kemarin</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center pb-10">
+        <p class="text-[8px] font-black text-slate-300 uppercase tracking-widest italic">SDN 169 Digital Ecosystem</p>
+    </footer>
+
+    <script>
+        function openTab(tabName) {
+            // Sembunyikan semua tab
+            const tabs = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            // Tampilkan tab yang dipilih
+            document.getElementById(tabName).classList.add("active");
+        }
+
+        function simulasiBayar() {
+            alert("✨ NOTIFIKASI WHATSAPP TERKIRIM!\n\n(Simulasi): Pesan telah dikirim ke HP Orang Tua bahwa Ananda sudah belanja senilai Rp 5.000");
+        }
+    </script>
+</body>
+</html>
