@@ -157,7 +157,6 @@
             const filterTgl = document.getElementById('filterTanggal').value;
             const filterKls = document.getElementById('filterKelas').value;
             
-            // Sync Daftar Siswa (Tetap Real-time)
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
@@ -182,10 +181,7 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
-            // OPTIMASI LAPORAN: Gunakan once agar tidak ngelag saat data menumpuk
             let laporanRef = db.ref('kantin_laporan');
-            
-            // Jika tidak ada filter tanggal, batasi hanya 50 data terakhir (Limit)
             if (!filterTgl) {
                 laporanRef = laporanRef.limitToLast(50);
             }
@@ -196,14 +192,17 @@
                 
                 snap.forEach(l => {
                     const d = l.val();
-                    // Parsing tanggal database (asumsi format DD/MM/YYYY)
                     const pts = d.waktu.split(',')[0].split('/');
                     const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
 
-                    // Logika Filter: Jika tanggal cocok ATAU tidak ada filter tanggal (ambil limit tadi)
                     if (!filterTgl || tglData === filterTgl) {
                         totalSmua += d.total;
-                        stanGrup[d.stan] = (stanGrup[d.stan] || 0) + d.total;
+
+                        // SISIPAN PERBAIKAN UNDEFINED:
+                        // Jika d.admin kosong, gunakan d.stan. Jika stan juga kosong, gunakan "Umum"
+                        let namaStanKategori = d.admin || d.stan || "Umum";
+                        stanGrup[namaStanKategori] = (stanGrup[namaStanKategori] || 0) + d.total;
+
                         const tampilKelas = d.kelas || d.kelasSiswa || '-';
                         
                         body.innerHTML = `<tr>
