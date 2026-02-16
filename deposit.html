@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KEUANGAN - E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -67,6 +68,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
         const FONNTE_TOKEN = "4xNPsRSw3FPeUjR8cxXjaAT8xpKv";
 
         let currentIdSiswa = null;
@@ -74,6 +76,18 @@
         let currentNama = "";
         let currentWA = "";
         let scanner = new Html5Qrcode("reader");
+
+        // --- TAMBAHAN: PROTEKSI LOGIN ---
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Jika login, jalankan kamera
+                startScanner();
+            } else {
+                // Jika belum login, tendang ke halaman login
+                alert("Anda harus login sebagai Admin!");
+                window.location.href = "login.html";
+            }
+        });
 
         function startScanner() {
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (id) => {
@@ -112,30 +126,31 @@
             if (tipe === 'TOPUP') {
                 saldoBaru = currentSaldo + nominal;
                 statusItem = "TOP UP SALDO";
-                pesanWA = `*TOP UP BERHASIL 💰*\n\nAlhamdulillah, Saldo Ananda *${currentNama}* telah bertambah sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Saldo Sekarang: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SD Indonesia Hebat_`;
+                pesanWA = `*TOP UP BERHASIL 💰*\n\nAlhamdulillah, Saldo Ananda *${currentNama}* telah bertambah sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Saldo Sekarang: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SDN 165 TJB_`;
             } else {
                 if (nominal > currentSaldo) return alert("Saldo tidak mencukupi untuk penarikan ini!");
                 saldoBaru = currentSaldo - nominal;
                 statusItem = "TARIK TUNAI";
-                pesanWA = `*PENARIKAN BERHASIL 💸*\n\nSaldo Ananda *${currentNama}* telah ditarik sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SD Indonesia Hebat_`;
+                pesanWA = `*PENARIKAN BERHASIL 💸*\n\nSaldo Ananda *${currentNama}* telah ditarik sebesar *Rp ${nominal.toLocaleString()}*.\n\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_E-Kantin SDN 165 TJB_`;
             }
 
             const waktu = new Date().toLocaleString('id-ID');
 
-            // 1. Update Saldo
+            // Proses Update ke Database
             db.ref('kantin_users/' + currentIdSiswa + '/saldo').set(saldoBaru).then(() => {
                 
-                // 2. Catat Laporan
+                // Masukkan ke kantin_laporan agar muncul di grafik admin
                 db.ref('kantin_laporan').push({
                     idSiswa: currentIdSiswa,
                     namaSiswa: currentNama,
                     total: nominal,
                     item: statusItem,
-                    stan: "ADMIN TABUNGAN",
+                    stan: "ADMIN KEUANGAN",
+                    admin: "SISTEM DEPOSIT", // Menandai transaksi dilakukan di menu keuangan
                     waktu: waktu
                 });
 
-                // 3. Kirim WA
+                // Kirim Notifikasi WA
                 if (currentWA) {
                     fetch('https://api.fonnte.com/send', {
                         method: 'POST',
@@ -146,14 +161,14 @@
 
                 alert(`✅ ${statusItem} BERHASIL!\nSaldo sekarang: Rp ${saldoBaru.toLocaleString()}`);
                 location.reload();
+            }).catch(err => {
+                alert("Gagal memproses: " + err.message);
             });
         }
 
         function batalScan() {
             location.reload();
         }
-
-        startScanner();
     </script>
 </body>
 </html>
