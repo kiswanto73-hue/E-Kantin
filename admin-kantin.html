@@ -130,12 +130,13 @@
         const auth = firebase.auth();
         let myChart = null;
 
+        // PROTEKSI LOGIN: Cek apakah user sudah login
         auth.onAuthStateChanged(user => {
             if (user) {
                 loadData();
             } else {
-                auth.signInWithEmailAndPassword("sdn169.cintadamai@gmail.com", "Cintadama1")
-                    .catch(err => console.error("Login gagal:", err.message));
+                // Jika tidak ada user, paksa ke halaman login
+                window.location.href = "login.html";
             }
         });
 
@@ -183,7 +184,7 @@
 
             let laporanRef = db.ref('kantin_laporan');
             if (!filterTgl) {
-                laporanRef = laporanRef.limitToLast(50);
+                laporanRef = laporanRef.limitToLast(100); // Ambil 100 terakhir agar grafik lebih akurat
             }
 
             laporanRef.once('value', snap => {
@@ -192,16 +193,18 @@
                 
                 snap.forEach(l => {
                     const d = l.val();
+                    // Parsing tanggal format DD/MM/YYYY atau YYYY-MM-DD
                     const pts = d.waktu.split(',')[0].split('/');
-                    const tglData = `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`;
+                    const tglData = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
 
                     if (!filterTgl || tglData === filterTgl) {
-                        totalSmua += d.total;
-
-                        // SISIPAN PERBAIKAN UNDEFINED:
-                        // Jika d.admin kosong, gunakan d.stan. Jika stan juga kosong, gunakan "Umum"
-                        let namaStanKategori = d.admin || d.stan || "Umum";
-                        stanGrup[namaStanKategori] = (stanGrup[namaStanKategori] || 0) + d.total;
+                        // Hanya hitung Omzet (Abaikan Tarik Tunai/Pengeluaran jika ada)
+                        if (d.item !== "TARIK TUNAI") {
+                            totalSmua += d.total;
+                            // Kategorikan untuk Grafik: Prioritas nama Stan atau Admin Penanggungjawab
+                            let namaStanKategori = d.stan || d.admin || "UMUM";
+                            stanGrup[namaStanKategori] = (stanGrup[namaStanKategori] || 0) + d.total;
+                        }
 
                         const tampilKelas = d.kelas || d.kelasSiswa || '-';
                         
@@ -229,7 +232,7 @@
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'doughnut',
-                data: { labels: Object.keys(stanData), datasets: [{ data: Object.values(stanData), backgroundColor: ['#4338ca', '#f59e0b', '#10b981', '#ef4444'], borderWidth: 0 }] },
+                data: { labels: Object.keys(stanData), datasets: [{ data: Object.values(stanData), backgroundColor: ['#4338ca', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'], borderWidth: 0 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
@@ -290,7 +293,12 @@
 
         function resetTransaksi() { if(confirm("Hapus semua riwayat? PERINGATAN: Ini akan mempercepat aplikasi secara total.")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
         function hapusSiswa(id) { if(confirm("Hapus siswa ini?")) db.ref('kantin_users').child(id).remove(); }
-        function logout() { auth.signOut().then(() => { location.reload(); }); }
+        
+        function logout() { 
+            auth.signOut().then(() => { 
+                window.location.href = "login.html"; 
+            }); 
+        }
     </script>
 </body>
 </html>
