@@ -103,6 +103,35 @@
                 }
             });
         }
+
+        /** * FITUR TAMBAHAN: SCAN BARCODE EKSTERNAL (BLUETOOTH / USB)
+         * Tanpa menghapus fungsi kamera di atas.
+         */
+        let barcodeBuffer = "";
+        let lastKeyTime = Date.now();
+
+        window.addEventListener("keydown", (e) => {
+            const currentTime = Date.now();
+            
+            // Logika pendeteksi scanner eksternal (kecepatan ketik tinggi)
+            if (currentTime - lastKeyTime > 50) {
+                barcodeBuffer = "";
+            }
+
+            if (e.key !== "Enter") {
+                if (e.key.length === 1) {
+                    barcodeBuffer += e.key;
+                }
+            } else {
+                if (barcodeBuffer.length > 0) {
+                    const cleanID = barcodeBuffer.trim();
+                    document.getElementById('inputID').value = cleanID;
+                    prosesCekSaldo(cleanID);
+                    barcodeBuffer = ""; 
+                }
+            }
+            lastKeyTime = currentTime;
+        });
     </script>
 </body>
 </html>
