@@ -203,6 +203,44 @@
                 resetCart();
             });
         }
+
+        /** * FITUR TAMBAHAN: SCAN BARCODE EKSTERNAL (BLUETOOTH / USB)
+         * Cara kerja: Menangkap input keyboard cepat dari alat scanner
+         */
+        let barcodeBuffer = "";
+        let lastKeyTime = Date.now();
+
+        window.addEventListener("keydown", (e) => {
+            const currentTime = Date.now();
+            
+            // Jika jeda antar ketikan > 50ms, kemungkinan input manual (keyboard), bukan scanner
+            if (currentTime - lastKeyTime > 50) {
+                barcodeBuffer = "";
+            }
+
+            // Simpan karakter kecuali tombol Enter
+            if (e.key !== "Enter") {
+                // Hanya tangkap karakter alfanumerik untuk menghindari tombol fungsi
+                if (e.key.length === 1) {
+                    barcodeBuffer += e.key;
+                }
+            } else {
+                // Jika tombol Enter ditekan dan buffer tidak kosong
+                if (barcodeBuffer.length > 0) {
+                    // Validasi: Cek apakah keranjang ada isinya
+                    if (cart.length === 0) {
+                        alert("Pilih menu dulu baru scan kartu, Pak!");
+                        barcodeBuffer = "";
+                        return;
+                    }
+                    
+                    // Jalankan proses bayar menggunakan ID dari scanner Bluetooth
+                    prosesBayar(barcodeBuffer.trim());
+                    barcodeBuffer = ""; // Kosongkan buffer setelah proses
+                }
+            }
+            lastKeyTime = currentTime;
+        });
     </script>
 </body>
 </html>
