@@ -82,7 +82,6 @@
             if (nama && harga) {
                 const menuId = nama.replace(/\s+/g, '_');
                 
-                // Ambil data lama dulu supaya jumlah "terjual" tidak reset ke 0 saat ganti harga
                 db.ref('kantin_menus/' + stan + '/' + menuId).once('value', snapshot => {
                     const dataLama = snapshot.val() || {};
                     const terjualSekarang = dataLama.terjual || 0;
@@ -91,7 +90,6 @@
                         nama: nama,
                         harga: harga,
                         stok_awal: awal,
-                        // Stok Sore (stok_akhir) otomatis: Awal - Terjual
                         stok_akhir: (awal - terjualSekarang), 
                         terjual: terjualSekarang
                     }).then(() => {
@@ -104,10 +102,15 @@
             } else { alert("Isi Nama & Harga!"); }
         }
 
+        // PERBAIKAN: Render lebih efisien untuk menghilangkan lag
         db.ref('kantin_menus').on('value', snapshot => {
             const container = document.getElementById('displayMenu');
-            container.innerHTML = "";
-            if(!snapshot.exists()) return;
+            if(!snapshot.exists()) {
+                container.innerHTML = `<p class="text-center text-slate-400 italic text-xs py-10">Belum ada menu.</p>`;
+                return;
+            }
+
+            let allContent = ""; // String buffer untuk menampung HTML
 
             snapshot.forEach(stanSnap => {
                 const namaStan = stanSnap.key;
@@ -119,7 +122,6 @@
                 stanSnap.forEach(menuSnap => {
                     const m = menuSnap.val();
                     const mId = menuSnap.key;
-                    // Hitung sisa stok secara real-time untuk tampilan
                     const sisaStok = (m.stok_awal || 0) - (m.terjual || 0);
 
                     htmlStan += `
@@ -130,8 +132,8 @@
                                     <p class="text-[10px] font-bold text-indigo-600">Rp ${m.harga.toLocaleString()}</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button onclick="editForm('${namaStan}','${mId}', '${m.nama}', ${m.harga}, ${m.stok_awal})" class="p-2 bg-slate-50 rounded-xl text-xs">✏️</button>
-                                    <button onclick="hapusMenu('${namaStan}', '${mId}')" class="p-2 bg-red-50 text-red-400 rounded-xl text-xs">🗑️</button>
+                                    <button onclick="editForm('${namaStan}','${mId}', '${m.nama.replace(/'/g, "\\'")}', ${m.harga}, ${m.stok_awal})" class="p-2 bg-slate-50 rounded-xl text-xs active:bg-indigo-100">✏️</button>
+                                    <button onclick="hapusMenu('${namaStan}', '${mId}')" class="p-2 bg-red-50 text-red-400 rounded-xl text-xs active:bg-red-100">🗑️</button>
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-2">
@@ -150,8 +152,12 @@
                             </div>
                         </div>`;
                 });
-                container.innerHTML += htmlStan + `</div></div>`;
+                
+                allContent += htmlStan + `</div></div>`;
             });
+            
+            // Masukkan ke DOM hanya sekali di akhir loop
+            container.innerHTML = allContent;
         });
 
         function editForm(stan, id, nama, harga, awal) {
@@ -163,7 +169,9 @@
         }
 
         function hapusMenu(stan, id) {
-            if (confirm("Hapus menu?")) db.ref('kantin_menus/' + stan + '/' + id).remove();
+            if (confirm("Hapus menu ini dari database?")) {
+                db.ref('kantin_menus/' + stan + '/' + id).remove();
+            }
         }
     </script>
 </body>
