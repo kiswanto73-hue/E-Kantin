@@ -21,6 +21,7 @@
         <div id="scannerContainer" class="bg-white p-4 rounded-[2.5rem] shadow-sm mb-6 border border-emerald-50">
             <div id="reader" class="rounded-[2rem] overflow-hidden border-4 border-emerald-50 mb-4"></div>
             <p class="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Arahkan Barcode ID Siswa ke Kamera</p>
+            <p class="text-center text-[8px] font-bold text-emerald-600 mt-2 uppercase">Atau Scan Langsung dengan Alat Bluetooth/USB</p>
         </div>
 
         <div id="depositForm" class="hidden space-y-4">
@@ -108,7 +109,9 @@
                     document.getElementById('saldoSekarang').innerText = "Saldo Saat Ini: Rp " + currentSaldo.toLocaleString();
                     document.getElementById('depositForm').classList.remove('hidden');
                     document.getElementById('scannerContainer').classList.add('hidden');
-                    scanner.stop();
+                    
+                    // Stop scanner kamera jika sedang aktif
+                    try { scanner.stop(); } catch(e) {}
                 } else {
                     alert("ID Siswa tidak ditemukan!");
                 }
@@ -169,6 +172,34 @@
         function batalScan() {
             location.reload();
         }
+
+        /** * FITUR TAMBAHAN: SCAN BARCODE EKSTERNAL (BLUETOOTH / USB)
+         * Menangkap input cepat dari scanner fisik
+         */
+        let barcodeBuffer = "";
+        let lastKeyTime = Date.now();
+
+        window.addEventListener("keydown", (e) => {
+            const currentTime = Date.now();
+            
+            // Logika pendeteksi scanner (kecepatan ketik tinggi)
+            if (currentTime - lastKeyTime > 50) {
+                barcodeBuffer = "";
+            }
+
+            if (e.key !== "Enter") {
+                if (e.key.length === 1) {
+                    barcodeBuffer += e.key;
+                }
+            } else {
+                if (barcodeBuffer.length > 0) {
+                    const cleanID = barcodeBuffer.trim();
+                    cariSiswa(cleanID);
+                    barcodeBuffer = ""; 
+                }
+            }
+            lastKeyTime = currentTime;
+        });
     </script>
 </body>
 </html>
