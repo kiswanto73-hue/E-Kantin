@@ -49,7 +49,7 @@
     </div>
 
     <script>
-        // CONFIG FIREBASE BAPAK
+        // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -64,7 +64,6 @@
 
         let cart = []; 
         let total = 0;
-        // TOKEN FONNTE BARU BAPAK
         const FONNTE_TOKEN = "RjMyF3NyoVWPXC2SGKCu"; 
 
         // LOAD MENU DARI FIREBASE
@@ -180,7 +179,7 @@
                     waktu 
                 });
 
-                // KIRIM NOTIFIKASI WHATSAPP
+                // --- PERBAIKAN WHATSAPP (FONNTE) ---
                 if (user.wa) {
                     let targetWA = user.wa.replace(/[^0-9]/g, ''); 
                     if (targetWA.startsWith('0')) {
@@ -189,13 +188,19 @@
 
                     const pesan = `*STRUK DIGITAL E-KANTIN*\n*SDN 169*\n\nAnanda: *${user.nama}*\n\n*Detail Belanja:*\n${detailItems}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*\n\n_Waktu: ${waktu}_`;
                     
+                    // Gunakan FormData agar Fonnte dapat membaca data dengan benar
+                    const formData = new FormData();
+                    formData.append('target', targetWA);
+                    formData.append('message', pesan);
+                    formData.append('countryCode', '62');
+
                     fetch('https://api.fonnte.com/send', { 
                         method: 'POST', 
                         headers: { 'Authorization': FONNTE_TOKEN }, 
-                        body: new URLSearchParams({ 'target': targetWA, 'message': pesan }) 
+                        body: formData 
                     })
                     .then(r => r.json())
-                    .then(res => console.log("WA Sent:", res))
+                    .then(res => console.log("Fonnte Response:", res))
                     .catch(err => console.error("WA Error:", err));
                 }
                 
@@ -204,39 +209,29 @@
             });
         }
 
-        /** * FITUR TAMBAHAN: SCAN BARCODE EKSTERNAL (BLUETOOTH / USB)
-         * Cara kerja: Menangkap input keyboard cepat dari alat scanner
-         */
+        // FITUR SCANNER BLUETOOTH / USB (TETAP DIJAGA)
         let barcodeBuffer = "";
         let lastKeyTime = Date.now();
 
         window.addEventListener("keydown", (e) => {
             const currentTime = Date.now();
-            
-            // Jika jeda antar ketikan > 50ms, kemungkinan input manual (keyboard), bukan scanner
             if (currentTime - lastKeyTime > 50) {
                 barcodeBuffer = "";
             }
 
-            // Simpan karakter kecuali tombol Enter
             if (e.key !== "Enter") {
-                // Hanya tangkap karakter alfanumerik untuk menghindari tombol fungsi
                 if (e.key.length === 1) {
                     barcodeBuffer += e.key;
                 }
             } else {
-                // Jika tombol Enter ditekan dan buffer tidak kosong
                 if (barcodeBuffer.length > 0) {
-                    // Validasi: Cek apakah keranjang ada isinya
                     if (cart.length === 0) {
                         alert("Pilih menu dulu baru scan kartu, Pak!");
                         barcodeBuffer = "";
                         return;
                     }
-                    
-                    // Jalankan proses bayar menggunakan ID dari scanner Bluetooth
                     prosesBayar(barcodeBuffer.trim());
-                    barcodeBuffer = ""; // Kosongkan buffer setelah proses
+                    barcodeBuffer = "";
                 }
             }
             lastKeyTime = currentTime;
