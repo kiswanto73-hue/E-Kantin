@@ -32,20 +32,24 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-emerald-500">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Omzet (Filter)</h3>
                 <p id="totalOmzet" class="text-2xl font-black text-slate-800">Rp 0</p>
                 <div id="breakdownStan" class="mt-2 space-y-1 text-[8px] font-bold text-slate-500 uppercase"></div>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-indigo-600">
-                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Deposit Siswa</h3>
+                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Tabungan (Utama)</h3>
                 <p id="totalDeposit" class="text-2xl font-black text-indigo-700">Rp 0</p>
+            </div>
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-orange-500">
+                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Saldo Harian</h3>
+                <p id="totalSaldoHarianSiswa" class="text-2xl font-black text-orange-600">Rp 0</p>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm flex flex-col items-center justify-center">
                 <div class="w-full h-[100px]"><canvas id="chartStan"></canvas></div>
             </div>
-            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-orange-500 text-center">
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-slate-800 text-center">
                 <div class="grid grid-cols-1 gap-2">
                     <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Excel Transaksi 📄</button>
                     <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md hover:bg-emerald-600">Excel Saldo 💰</button>
@@ -69,7 +73,18 @@
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
                             <option value="GURU">Guru / Staf</option>
                         </select>
-                        <input type="number" id="saldoSiswa" placeholder="Nominal Saldo (Rp)" class="w-full p-4 bg-emerald-50 rounded-2xl font-bold text-xs outline-none text-emerald-600">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-bold text-slate-400 ml-2">TABUNGAN UTAMA</label>
+                                <input type="number" id="saldoSiswa" placeholder="Rp" class="w-full p-4 bg-emerald-50 rounded-2xl font-bold text-xs outline-none text-emerald-600 border border-emerald-100">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-bold text-orange-400 ml-2">JATAH HARIAN</label>
+                                <input type="number" id="saldoHarian" placeholder="Rp" class="w-full p-4 bg-orange-50 rounded-2xl font-bold text-xs outline-none text-orange-600 border border-orange-100">
+                            </div>
+                        </div>
+
                         <input type="text" id="waSiswa" placeholder="No WA (628...)" class="w-full p-4 bg-indigo-50 rounded-2xl font-bold text-xs outline-none text-indigo-600">
                         <button onclick="updateSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest active:scale-95 transition-all">Simpan Data</button>
                     </div>
@@ -79,7 +94,7 @@
             <div class="lg:col-span-8 space-y-6">
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm overflow-hidden border">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Pembelian (50 Terakhir)</h3>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase italic">Riwayat Pembelian & Top Up</h3>
                         <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-none">
                     </div>
                     <div class="overflow-x-auto max-h-[250px]">
@@ -109,7 +124,7 @@
                             <option value="GURU">GURU/STAF</option>
                         </select>
                     </div>
-                    <div id="siswaList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-1"></div>
+                    <div id="siswaList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto p-1"></div>
                 </div>
             </div>
         </div>
@@ -130,14 +145,8 @@
         const auth = firebase.auth();
         let myChart = null;
 
-        // PROTEKSI LOGIN: Cek apakah user sudah login
         auth.onAuthStateChanged(user => {
-            if (user) {
-                loadData();
-            } else {
-                // Jika tidak ada user, paksa ke halaman login
-                window.location.href = "login.html";
-            }
+            if (user) { loadData(); } else { window.location.href = "login.html"; }
         });
 
         function updateSiswa() {
@@ -145,11 +154,25 @@
             const nama = document.getElementById('namaSiswa').value.toUpperCase().trim();
             const kelas = document.getElementById('kelasSiswa').value;
             const saldo = parseInt(document.getElementById('saldoSiswa').value) || 0;
+            const harian = parseInt(document.getElementById('saldoHarian').value) || 0;
             const wa = document.getElementById('waSiswa').value.trim();
+            
             if(id && nama && kelas) {
-                db.ref('kantin_users/' + id).set({ id, nama, kelas, saldo, wa }).then(() => { 
+                db.ref('kantin_users/' + id).update({ 
+                    id, nama, kelas, saldo, 
+                    saldo_harian: harian, 
+                    wa 
+                }).then(() => { 
+                    if(harian > 0) {
+                        const skrg = new Date();
+                        db.ref('kantin_laporan').push({
+                            namaSiswa: nama, idSiswa: id, kelas: kelas,
+                            item: "TOP UP HARIAN", total: harian,
+                            waktu: skrg.toLocaleString('id-ID'), admin: "ADMIN"
+                        });
+                    }
                     alert("Data Berhasil Diupdate!"); 
-                    ['idSiswa','namaSiswa','saldoSiswa','waSiswa'].forEach(i => document.getElementById(i).value = "");
+                    ['idSiswa','namaSiswa','saldoSiswa','saldoHarian','waSiswa'].forEach(i => document.getElementById(i).value = "");
                 });
             } else { alert("Lengkapi data!"); }
         }
@@ -160,69 +183,62 @@
             
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
+                let totalSmuaHarian = 0; // Tambahan hitungan
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
+                
                 snap.forEach(s => {
                     const d = s.val();
                     totalSmuaDeposit += (d.saldo || 0);
+                    totalSmuaHarian += (d.saldo_harian || 0); // Hitung total harian
+
                     if(filterKls === "SEMUA" || d.kelas === filterKls) {
                         cont.innerHTML += `
-                            <div class="p-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
+                            <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
                                 <div>
                                     <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
                                     <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
-                                    <p class="text-[9px] font-bold text-emerald-600">Rp ${d.saldo.toLocaleString()}</p>
+                                    <div class="flex gap-2 mt-1">
+                                        <p class="text-[9px] font-bold text-emerald-600">Dep: Rp ${(d.saldo || 0).toLocaleString()}</p>
+                                        <p class="text-[9px] font-bold text-orange-500">Day: Rp ${(d.saldo_harian || 0).toLocaleString()}</p>
+                                    </div>
                                 </div>
                                 <div class="flex gap-1">
-                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa || ''}')" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black">EDIT</button>
+                                    <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa || ''}',${d.saldo_harian || 0})" class="p-2 bg-indigo-600 text-white rounded-lg text-[8px] font-black shadow-sm">EDIT</button>
                                     <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-100 text-red-500 rounded-lg text-[8px]">×</button>
                                 </div>
                             </div>`;
                     }
                 });
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
+                document.getElementById('totalSaldoHarianSiswa').innerText = "Rp " + totalSmuaHarian.toLocaleString(); // Tampilkan di card
             });
 
-            let laporanRef = db.ref('kantin_laporan');
-            if (!filterTgl) {
-                laporanRef = laporanRef.limitToLast(100); // Ambil 100 terakhir agar grafik lebih akurat
-            }
-
-            laporanRef.once('value', snap => {
+            db.ref('kantin_laporan').limitToLast(100).once('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalSmua = 0; let stanGrup = {};
-                
                 snap.forEach(l => {
                     const d = l.val();
-                    // Parsing tanggal format DD/MM/YYYY atau YYYY-MM-DD
                     const pts = d.waktu.split(',')[0].split('/');
                     const tglData = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
 
                     if (!filterTgl || tglData === filterTgl) {
-                        // Hanya hitung Omzet (Abaikan Tarik Tunai/Pengeluaran jika ada)
-                        if (d.item !== "TARIK TUNAI") {
+                        if (d.item !== "TARIK TUNAI" && d.item !== "TOP UP HARIAN") {
                             totalSmua += d.total;
-                            // Kategorikan untuk Grafik: Prioritas nama Stan atau Admin Penanggungjawab
                             let namaStanKategori = d.stan || d.admin || "UMUM";
                             stanGrup[namaStanKategori] = (stanGrup[namaStanKategori] || 0) + d.total;
                         }
 
-                        const tampilKelas = d.kelas || d.kelasSiswa || '-';
-                        
+                        const itemColor = d.item === "TOP UP HARIAN" ? "text-orange-500" : "text-indigo-600";
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td>${d.namaSiswa}</td>
-                            <td class="text-slate-500 font-bold">${tampilKelas}</td>
-                            <td class="text-indigo-600 font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
+                            <td class="text-slate-500 font-bold">${d.kelas || '-'}</td>
+                            <td class="${itemColor} font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
                             <td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td>
                         </tr>` + body.innerHTML;
                     }
                 });
-                
                 document.getElementById('totalOmzet').innerText = "Rp " + totalSmua.toLocaleString();
-                const breakEl = document.getElementById('breakdownStan'); breakEl.innerHTML = "";
-                Object.keys(stanGrup).forEach(s => { 
-                    breakEl.innerHTML += `<div class="flex justify-between border-b border-slate-50"><span>${s}</span><span>Rp ${stanGrup[s].toLocaleString()}</span></div>`; 
-                });
                 updateChart(stanGrup);
             });
         }
@@ -237,6 +253,20 @@
             });
         }
 
+        function isiForm(id, nama, kelas, saldo, wa, harian) { 
+            document.getElementById('idSiswa').value = id; 
+            document.getElementById('namaSiswa').value = nama; 
+            document.getElementById('kelasSiswa').value = kelas; 
+            document.getElementById('saldoSiswa').value = saldo; 
+            document.getElementById('saldoHarian').value = harian || 0;
+            document.getElementById('waSiswa').value = wa; 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        }
+
+        function logout() { auth.signOut().then(() => { window.location.href = "login.html"; }); }
+        function hapusSiswa(id) { if(confirm("Hapus siswa ini?")) db.ref('kantin_users').child(id).remove(); }
+        function resetTransaksi() { if(confirm("Hapus semua riwayat?")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
+        function downloadLaporan() { const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); XLSX.writeFile(wb, `Laporan_Transaksi.xlsx`); }
         function downloadSaldo() {
             const filterKls = document.getElementById('filterKelas').value;
             const listData = [];
@@ -244,7 +274,7 @@
                 snap.forEach(s => {
                     const d = s.val();
                     if (filterKls === "SEMUA" || d.kelas === filterKls) {
-                        listData.push({ 'ID': d.id, 'NAMA': d.nama, 'KELAS': d.kelas, 'SALDO': d.saldo });
+                        listData.push({ 'ID': d.id, 'NAMA': d.nama, 'KELAS': d.kelas, 'TABUNGAN': d.saldo, 'HARIAN': d.saldo_harian });
                     }
                 });
                 const ws = XLSX.utils.json_to_sheet(listData);
@@ -252,11 +282,6 @@
                 XLSX.utils.book_append_sheet(wb, ws, "Saldo");
                 XLSX.writeFile(wb, `Saldo_${filterKls}.xlsx`);
             });
-        }
-
-        function downloadLaporan() { 
-            const wb = XLSX.utils.table_to_book(document.getElementById("tabelLaporan")); 
-            XLSX.writeFile(wb, `Laporan_Transaksi.xlsx`); 
         }
 
         function cetakKolektif() {
@@ -280,24 +305,6 @@
                 win.document.write(`setTimeout(()=>{window.print();},1500);<\/script></body></html>`);
                 win.document.close();
             });
-        }
-
-        function isiForm(id, nama, kelas, saldo, wa) { 
-            document.getElementById('idSiswa').value = id; 
-            document.getElementById('namaSiswa').value = nama; 
-            document.getElementById('kelasSiswa').value = kelas; 
-            document.getElementById('saldoSiswa').value = saldo; 
-            document.getElementById('waSiswa').value = wa; 
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        }
-
-        function resetTransaksi() { if(confirm("Hapus semua riwayat? PERINGATAN: Ini akan mempercepat aplikasi secara total.")) db.ref('kantin_laporan').remove().then(()=>location.reload()); }
-        function hapusSiswa(id) { if(confirm("Hapus siswa ini?")) db.ref('kantin_users').child(id).remove(); }
-        
-        function logout() { 
-            auth.signOut().then(() => { 
-                window.location.href = "login.html"; 
-            }); 
         }
     </script>
 </body>
