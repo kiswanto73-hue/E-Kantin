@@ -32,32 +32,29 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-emerald-500">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Omzet Penjualan</h3>
-                <p id="totalOmzet" class="text-xl font-black text-slate-800">Rp 0</p>
+                <p id="totalOmzet" class="text-2xl font-black text-slate-800">Rp 0</p>
+                <div id="breakdownStan" class="mt-2 space-y-1 text-[8px] font-bold text-slate-500 uppercase"></div>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-indigo-600">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Tabungan (Utama)</h3>
-                <p id="totalDeposit" class="text-xl font-black text-indigo-700">Rp 0</p>
+                <p id="totalDeposit" class="text-2xl font-black text-indigo-700">Rp 0</p>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-orange-500">
-                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Top Up Hari Ini</h3>
-                <p id="totalSaldoHarianSiswa" class="text-xl font-black text-orange-600">Rp 0</p>
-            </div>
-            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-red-500">
-                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Tarik Saldo Hari Ini</h3>
-                <p id="totalTarikHarian" class="text-xl font-black text-red-600">Rp 0</p>
+                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Top Up Masuk Hari Ini</h3>
+                <p id="totalSaldoHarianSiswa" class="text-2xl font-black text-orange-600">Rp 0</p>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm flex flex-col items-center justify-center">
-                <div class="w-full h-[80px]"><canvas id="chartStan"></canvas></div>
+                <div class="w-full h-[100px]"><canvas id="chartStan"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-slate-800 text-center">
-                <div class="grid grid-cols-1 gap-1">
-                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-1.5 rounded-lg text-[8px] font-black uppercase shadow-md">Excel Transaksi</button>
-                    <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-1.5 rounded-lg text-[8px] font-black uppercase shadow-md">Excel Saldo</button>
-                    <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-1.5 rounded-lg text-[8px] font-black uppercase shadow-md">Cetak Kartu</button>
-                    <button onclick="resetTransaksi()" class="text-red-500 text-[7px] font-bold uppercase italic mt-1">Reset Laporan</button>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Excel Transaksi 📄</button>
+                    <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md hover:bg-emerald-600">Excel Saldo 💰</button>
+                    <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase shadow-md">Cetak Kartu Portrait 🖨️</button>
+                    <button onclick="resetTransaksi()" class="text-red-500 text-[8px] font-bold uppercase italic">Reset Transaksi</button>
                 </div>
             </div>
         </div>
@@ -183,15 +180,19 @@
         function loadData() {
             const filterTgl = document.getElementById('filterTanggal').value;
             const filterKls = document.getElementById('filterKelas').value;
+            
+            // Ambil Hari Ini untuk Statistik Top Up
             const today = new Date().toLocaleDateString('id-ID');
 
-            // 1. Tabungan Utama
+            // 1. Load Data User (Saldo Tabungan)
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
+                
                 snap.forEach(s => {
                     const d = s.val();
                     totalSmuaDeposit += (d.saldo || 0);
+
                     if(filterKls === "SEMUA" || d.kelas === filterKls) {
                         cont.innerHTML += `
                             <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
@@ -213,51 +214,47 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
-            // 2. Laporan & Statistik
+            // 2. Load Laporan (Omzet Penjualan & Total Top Up Masuk)
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalOmzet = 0; 
-                let totalTopUpHariIni = 0;
-                let totalTarikHariIni = 0; // Tambahan Tarik Saldo
+                let totalTopUpHariIni = 0; 
                 let stanGrup = {};
 
                 snap.forEach(l => {
                     const d = l.val();
-                    const pts = d.waktu.split(',')[0].trim();
+                    const pts = d.waktu.split(',')[0].trim(); // Ambil tanggal saja (DD/MM/YYYY)
+                    
+                    // Konversi waktu laporan ke format YYYY-MM-DD untuk filter input date
                     const dateParts = pts.split('/');
                     const tglData = (dateParts.length === 3) ? `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}` : "";
 
-                    // Hitung Top Up & Tarik khusus hari ini
-                    if (pts === today) {
-                        if (d.item === "TOP UP HARIAN") totalTopUpHariIni += d.total;
-                        if (d.item === "TARIK TUNAI") totalTarikHariIni += d.total;
+                    // Hitung TOTAL TOP UP HARIAN (Selalu filter hari ini saja)
+                    if (pts === today && d.item === "TOP UP HARIAN") {
+                        totalTopUpHariIni += d.total;
                     }
 
-                    // Filter Omzet & Tabel
+                    // Hitung OMZET & Tampilkan Tabel (Berdasarkan filter tanggal pilihan)
                     if (!filterTgl || tglData === filterTanggal.value) {
                         if (d.item !== "TARIK TUNAI" && d.item !== "TOP UP HARIAN") {
                             totalOmzet += d.total;
-                            let namaStan = d.stan || d.admin || "UMUM";
-                            stanGrup[namaStan] = (stanGrup[namaStan] || 0) + d.total;
+                            let namaStanKategori = d.stan || d.admin || "UMUM";
+                            stanGrup[namaStanKategori] = (stanGrup[namaStanKategori] || 0) + d.total;
                         }
 
-                        let itemColor = "text-indigo-600";
-                        if(d.item === "TOP UP HARIAN") itemColor = "text-orange-500";
-                        if(d.item === "TARIK TUNAI") itemColor = "text-red-500";
-
+                        const itemColor = d.item === "TOP UP HARIAN" ? "text-orange-500" : "text-indigo-600";
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td>${d.namaSiswa}</td>
                             <td class="text-slate-500 font-bold">${d.kelas || '-'}</td>
                             <td class="${itemColor} font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
-                            <td class="text-right p-3 text-slate-700 font-black">Rp ${d.total.toLocaleString()}</td>
+                            <td class="text-right p-3 text-green-600 font-black">Rp ${d.total.toLocaleString()}</td>
                         </tr>` + body.innerHTML;
                     }
                 });
 
                 document.getElementById('totalOmzet').innerText = "Rp " + totalOmzet.toLocaleString();
                 document.getElementById('totalSaldoHarianSiswa').innerText = "Rp " + totalTopUpHariIni.toLocaleString();
-                document.getElementById('totalTarikHarian').innerText = "Rp " + totalTarikHariIni.toLocaleString();
                 updateChart(stanGrup);
             });
         }
@@ -266,6 +263,7 @@
             const ctx = document.getElementById('chartStan').getContext('2d');
             if (myChart) myChart.destroy();
             if (Object.keys(stanData).length === 0) return;
+
             myChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: { labels: Object.keys(stanData), datasets: [{ data: Object.values(stanData), backgroundColor: ['#4338ca', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'], borderWidth: 0 }] },
