@@ -73,7 +73,6 @@
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
                             <option value="GURU">Guru / Staf</option>
                         </select>
-                        
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[8px] font-bold text-slate-400 ml-2">TABUNGAN UTAMA</label>
@@ -84,7 +83,6 @@
                                 <input type="number" id="saldoHarian" placeholder="Rp" class="w-full p-4 bg-orange-50 rounded-2xl font-bold text-xs outline-none text-orange-600 border border-orange-100">
                             </div>
                         </div>
-
                         <input type="text" id="waSiswa" placeholder="No WA (628...)" class="w-full p-4 bg-indigo-50 rounded-2xl font-bold text-xs outline-none text-indigo-600">
                         <button onclick="updateSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest active:scale-95 transition-all">Simpan Data</button>
                     </div>
@@ -158,12 +156,7 @@
             const wa = document.getElementById('waSiswa').value.trim();
             
             if(id && nama && kelas) {
-                db.ref('kantin_users/' + id).update({ 
-                    id, nama, kelas, saldo, 
-                    saldo_harian: harian, 
-                    wa 
-                }).then(() => { 
-                    // Logika Pencatatan Transaksi Top Up Harian
+                db.ref('kantin_users/' + id).update({ id, nama, kelas, saldo, saldo_harian: harian, wa }).then(() => { 
                     if(harian > 0) {
                         db.ref('kantin_laporan').push({
                             namaSiswa: nama, idSiswa: id, kelas: kelas,
@@ -185,11 +178,9 @@
             db.ref('kantin_users').on('value', snap => {
                 let totalSmuaDeposit = 0;
                 const cont = document.getElementById('siswaList'); cont.innerHTML = "";
-                
                 snap.forEach(s => {
                     const d = s.val();
-                    totalSmuaDeposit += (d.saldo || 0);
-
+                    totalSmuaDeposit += (Number(d.saldo) || 0);
                     if(filterKls === "SEMUA" || d.kelas === filterKls) {
                         cont.innerHTML += `
                             <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
@@ -197,8 +188,8 @@
                                     <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
                                     <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
                                     <div class="flex gap-2 mt-1">
-                                        <p class="text-[9px] font-bold text-emerald-600">Dep: Rp ${(d.saldo || 0).toLocaleString()}</p>
-                                        <p class="text-[9px] font-bold text-orange-500">Day: Rp ${(d.saldo_harian || 0).toLocaleString()}</p>
+                                        <p class="text-[9px] font-bold text-emerald-600">Dep: Rp ${(Number(d.saldo) || 0).toLocaleString()}</p>
+                                        <p class="text-[9px] font-bold text-orange-500">Day: Rp ${(Number(d.saldo_harian) || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
                                 <div class="flex gap-1">
@@ -211,7 +202,7 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalSmuaDeposit.toLocaleString();
             });
 
-            // 2. MONITOR OMZET & TOTAL TOP UP HARIAN DARI LAPORAN
+            // 2. MONITOR OMZET & TOTAL TOP UP HARIAN (KOREKSI LOGIKA)
             db.ref('kantin_laporan').on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let totalBelanja = 0; 
@@ -224,24 +215,24 @@
                     const tglData = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
 
                     if (!filterTgl || tglData === filterTgl) {
-                        // Jika item adalah TOP UP HARIAN, hitung ke kotak oranye
-                        if (d.item === "TOP UP HARIAN") {
-                            totalTopUpHarianFilter += (d.total || 0);
+                        // DETEKSI TOP UP (Menghitung Kotak Oranye)
+                        if (d.item === "TOP UP HARIAN" || d.item === "TOP UP SALDO") {
+                            totalTopUpHarianFilter += (Number(d.total) || 0);
                         } 
-                        // Jika item belanja (bukan tarik tunai), hitung ke omzet
+                        // DETEKSI BELANJA (Menghitung Omzet)
                         else if (d.item !== "TARIK TUNAI") {
-                            totalBelanja += (d.total || 0);
-                            let namaStan = d.stan || d.admin || "UMUM";
-                            stanGrup[namaStan] = (stanGrup[namaStan] || 0) + (d.total || 0);
+                            totalBelanja += (Number(d.total) || 0);
+                            let nm = d.stan || d.admin || "UMUM";
+                            stanGrup[nm] = (stanGrup[nm] || 0) + (Number(d.total) || 0);
                         }
 
-                        const itemColor = d.item === "TOP UP HARIAN" ? "text-orange-500" : "text-indigo-600";
+                        const clr = (d.item === "TOP UP HARIAN" || d.item === "TOP UP SALDO") ? "text-orange-500" : "text-indigo-600";
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td>${d.namaSiswa}</td>
                             <td class="text-slate-500 font-bold">${d.kelas || '-'}</td>
-                            <td class="${itemColor} font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
-                            <td class="text-right p-3 text-green-600 font-black">Rp ${(d.total || 0).toLocaleString()}</td>
+                            <td class="${clr} font-black text-[9px] uppercase italic">${d.item || 'Pembelian'}</td>
+                            <td class="text-right p-3 text-green-600 font-black">Rp ${(Number(d.total) || 0).toLocaleString()}</td>
                         </tr>` + body.innerHTML;
                     }
                 });
@@ -261,13 +252,10 @@
             });
         }
 
-        function isiForm(id, nama, kelas, saldo, wa, harian) { 
-            document.getElementById('idSiswa').value = id; 
-            document.getElementById('namaSiswa').value = nama; 
-            document.getElementById('kelasSiswa').value = kelas; 
-            document.getElementById('saldoSiswa').value = saldo; 
-            document.getElementById('saldoHarian').value = harian || 0;
-            document.getElementById('waSiswa').value = wa; 
+        function isiForm(id, nm, kl, sl, wa, hr) { 
+            document.getElementById('idSiswa').value = id; document.getElementById('namaSiswa').value = nm; 
+            document.getElementById('kelasSiswa').value = kl; document.getElementById('saldoSiswa').value = sl; 
+            document.getElementById('saldoHarian').value = hr || 0; document.getElementById('waSiswa').value = wa; 
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
 
