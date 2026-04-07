@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal E-Kantin - SD Indonesia Hebat</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1b4b">
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -86,11 +92,49 @@
                 </div>
             </div>
             
+            <div id="status-koneksi" class="hidden mt-4 text-center">
+                <span class="bg-red-500 text-white text-[8px] font-bold px-3 py-1 rounded-full uppercase">Mode Offline Aktif</span>
+            </div>
+
             <p class="text-[9px] text-indigo-300/50 text-center mt-8 font-bold uppercase tracking-[0.3em]">v2.0 Full Integration</p>
         </div>
     </div>
 
     <script>
+        // --- TAMBAHAN UNTUK OFFLINE ---
+        
+        // 1. Inisialisasi Firebase (Gunakan Config Bapak yang sudah ada)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
+            authDomain: "e-kantin-91f0c.firebaseapp.com",
+            databaseURL: "https://e-kantin-91f0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "e-kantin-91f0c",
+            storageBucket: "e-kantin-91f0c.firebasestorage.app",
+            messagingSenderId: "981834126006",
+            appId: "1:981834126006:web:dac8bb0ec1da90549b4c17"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // 2. Aktifkan Offline Persistence
+        firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+        // 3. Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("Service Worker Terdaftar"))
+                .catch(err => console.log("SW Gagal:", err));
+        }
+
+        // 4. Pantau Status Internet
+        window.addEventListener('online', () => {
+            document.getElementById('status-koneksi').classList.add('hidden');
+        });
+        window.addEventListener('offline', () => {
+            document.getElementById('status-koneksi').classList.remove('hidden');
+        });
+
+        // --- FUNGSI ASLI (TIDAK BERUBAH) ---
+
         function loginKasir() {
             sessionStorage.setItem("portalLoggedIn", "true");
             window.location.href = "kasir-kantin.html";
@@ -100,7 +144,6 @@
             const email = document.getElementById('adm_email').value.trim();
             const pass = document.getElementById('adm_pass').value.trim();
 
-            // Pengecekan Dua Akun
             const isUser1 = (email === "kiswanto73@guru.sd.belajar.id" && pass === "Kis7384@");
             const isUser2 = (email === "sdn169.cintadamai@gmail.com" && pass === "Cintadama1");
 
