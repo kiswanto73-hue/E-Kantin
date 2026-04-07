@@ -25,6 +25,7 @@
             </div>
             <div class="flex gap-2">
                 <a href="index.html" class="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-bold uppercase text-white">Portal</a>
+                <button onclick="resetTransaksiHarian()" class="bg-orange-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase text-white shadow-lg hover:bg-orange-600 transition-all">Reset Transaksi ⚠️</button>
                 <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase text-white shadow-lg">Keluar</button>
             </div>
         </div>
@@ -46,7 +47,7 @@
             <div class="bg-white p-4 rounded-[2rem] shadow-sm flex flex-col border-t-4 border-slate-700">
                 <div class="flex justify-between items-center mb-1">
                     <h3 class="text-[8px] font-black text-slate-400 uppercase">Stok Menu</h3>
-                    <button onclick="loadStokChart()" class="text-[8px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold hover:bg-indigo-700 hover:text-white">UPDATE 🔄</button>
+                    <button onclick="loadStokChart()" class="text-[8px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold hover:bg-indigo-700 hover:text-white transition-all">UPDATE 🔄</button>
                 </div>
                 <div class="w-full h-[80px]"><canvas id="chartStok"></canvas></div>
             </div>
@@ -146,13 +147,37 @@
         auth.onAuthStateChanged(user => {
             if (user) { 
                 loadData(); 
-                loadStokChart(); // Muat grafik stok sekali saat login
+                loadStokChart();
             } else { 
                 window.location.href = "login.html"; 
             }
         });
 
-        // FUNGSI GRAFIK STOK (DIBUAT ONCE AGAR TIDAK LAG)
+        // FUNGSI RESET TRANSAKSI HARIAN
+        async function resetTransaksiHarian() {
+            if (confirm("⚠️ PERINGATAN: Ini akan menghapus SEMUA Riwayat Transaksi dan mereset 'Terjual' di stok menu menjadi 0. Saldo utama siswa TETAP AMAN. Lanjutkan?")) {
+                try {
+                    // 1. Hapus riwayat laporan
+                    await db.ref('kantin_laporan').remove();
+                    
+                    // 2. Reset angka terjual di menu
+                    const menuSnap = await db.ref('kantin_menus').once('value');
+                    menuSnap.forEach(stanSnap => {
+                        stanSnap.forEach(itemSnap => {
+                            itemSnap.ref.update({ terjual: 0 });
+                        });
+                    });
+                    
+                    alert("Berhasil! Sistem siap untuk hari baru.");
+                    loadData();
+                    loadStokChart();
+                } catch (e) {
+                    alert("Gagal reset: " + e.message);
+                }
+            }
+        }
+
+        // FUNGSI GRAFIK STOK (.once)
         function loadStokChart() {
             db.ref('kantin_menus').once('value').then(snap => {
                 let labels = [];
@@ -279,7 +304,7 @@
             });
         }
 
-        // TOOLS
+        // TOOLS LAINNYA
         function isiForm(id, nm, kl, sl, wa, hr) { 
             document.getElementById('idSiswa').value = id; 
             document.getElementById('namaSiswa').value = nm; 
