@@ -126,48 +126,48 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
-        // 2. PROSES BAYAR - LOGIKA ANTI-LAG & VALIDASI STOK KETAT
+        // 2. PROSES BAYAR - PERBAIKAN LOGIKA ATOMIK (Gagal stok = Gagal saldo)
         async function prosesBayar(idSiswa) {
             if(cart.length === 0) return alert("Pilih menu dulu!");
             
             const btn = document.getElementById('btnCheckout');
-            if (btn.disabled) return; // Mencegah klik ganda jika proses sedang jalan
+            if (btn.disabled) return; 
 
             btn.innerText = "SEDANG MEMPROSES..."; 
-            btn.disabled = true; // Kunci tombol segera
+            btn.disabled = true; 
 
             const trimmedId = idSiswa.trim();
             
             try {
-                // Ambil data user
+                // Step 1: Ambil data user & saldo
                 const userSnap = await db.ref('kantin_users/' + trimmedId).once('value');
                 const user = userSnap.val();
 
                 if(!user) throw new Error("KARTU TIDAK DIKENAL!");
                 if(user.saldo < total) throw new Error("SALDO KURANG! Sisa: Rp " + user.saldo.toLocaleString());
 
-                // Validasi & Update Stok menggunakan Firebase Transaction (Anti-Lag & Anti-Double)
+                // Step 2: Cek stok kolektif di awal (sebelum memotong saldo/stok)
+                const menuSnap = await db.ref('kantin_menus').once('value');
+                const dataMenu = menuSnap.val();
+
                 for (let item of cart) {
-                    let stokError = null;
-                    await db.ref(`kantin_menus/${item.stan}/${item.idMenu}`).transaction((menu) => {
-                        if (menu) {
-                            const sisa = (menu.stok_awal || 0) - (menu.terjual || 0);
-                            if (sisa <= 0) {
-                                stokError = `Maaf, ${item.nama} baru saja habis!`;
-                                return; // Batalkan transaksi stok
-                            }
-                            menu.terjual = (menu.terjual || 0) + 1;
-                        }
-                        return menu;
-                    });
-                    if (stokError) throw new Error(stokError);
+                    const currentMenu = dataMenu[item.stan][item.idMenu];
+                    const sisa = (currentMenu.stok_awal || 0) - (currentMenu.terjual || 0);
+                    if (sisa <= 0) {
+                        throw new Error(`STOK HABIS: ${item.nama} sudah tidak mencukupi.`);
+                    }
                 }
 
-                // Jika stok aman, potong saldo
+                // Step 3: Jika lolos cek stok, lakukan pengurangan (Transaksi per item tetap diperlukan untuk akurasi counter)
+                for (let item of cart) {
+                    await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + 1);
+                }
+
+                // Step 4: Update Saldo Siswa
                 const saldoBaru = user.saldo - total;
                 await db.ref('kantin_users/' + trimmedId + '/saldo').set(saldoBaru);
 
-                // Catat Laporan
+                // Step 5: Catat Laporan
                 const waktu = new Date().toLocaleString('id-ID');
                 const itemNames = cart.map(i => i.nama).join(", ");
                 await db.ref('kantin_laporan').push({ 
@@ -178,7 +178,7 @@
                     waktu 
                 });
 
-                // Kirim WA jika ada nomornya
+                // Step 6: Kirim WA Gateway
                 if (user.wa) {
                     const detailWA = cart.map(i => `- ${i.nama} (Rp ${i.harga.toLocaleString()})`).join("\n");
                     const pesan = `*STRUK DIGITAL SDN 169*\nNama: *${user.nama}*\n\n${detailWA}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*`;
@@ -191,10 +191,11 @@
                 resetCart();
 
             } catch (err) {
+                // Semua kegagalan akan berhenti di sini tanpa merusak data
                 alert("❌ GAGAL: " + err.message);
             } finally {
                 btn.innerText = "BAYAR SEKARANG ✅"; 
-                btn.disabled = false; // Buka kembali tombol setelah selesai
+                btn.disabled = false; 
             }
         }
 
