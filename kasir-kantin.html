@@ -126,7 +126,7 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
-        // 2. PROSES BAYAR - PERBAIKAN LOGIKA ATOMIK (Gagal stok = Gagal saldo)
+        // 2. PROSES BAYAR - LOGIKA ATOMIK DENGAN PENGECEKAN JUMLAH (QTY)
         async function prosesBayar(idSiswa) {
             if(cart.length === 0) return alert("Pilih menu dulu!");
             
@@ -146,19 +146,31 @@
                 if(!user) throw new Error("KARTU TIDAK DIKENAL!");
                 if(user.saldo < total) throw new Error("SALDO KURANG! Sisa: Rp " + user.saldo.toLocaleString());
 
-                // Step 2: Cek stok kolektif di awal (sebelum memotong saldo/stok)
+                // --- HITUNG JUMLAH (QTY) TIAP ITEM DI KERANJANG ---
+                const cartSummary = {};
+                cart.forEach(item => {
+                    const key = `${item.stan}|${item.idMenu}`;
+                    if (!cartSummary[key]) {
+                        cartSummary[key] = { ...item, qty: 0 };
+                    }
+                    cartSummary[key].qty += 1;
+                });
+
+                // Step 2: Cek stok kolektif berdasarkan QTY pesanan
                 const menuSnap = await db.ref('kantin_menus').once('value');
                 const dataMenu = menuSnap.val();
 
-                for (let item of cart) {
+                for (let key in cartSummary) {
+                    const item = cartSummary[key];
                     const currentMenu = dataMenu[item.stan][item.idMenu];
-                    const sisa = (currentMenu.stok_awal || 0) - (currentMenu.terjual || 0);
-                    if (sisa <= 0) {
-                        throw new Error(`STOK HABIS: ${item.nama} sudah tidak mencukupi.`);
+                    const sisaStok = (currentMenu.stok_awal || 0) - (currentMenu.terjual || 0);
+                    
+                    if (sisaStok < item.qty) {
+                        throw new Error(`STOK KURANG: ${item.nama} sisa ${sisaStok}, tapi Bapak pesan ${item.qty}.`);
                     }
                 }
 
-                // Step 3: Jika lolos cek stok, lakukan pengurangan (Transaksi per item tetap diperlukan untuk akurasi counter)
+                // Step 3: Jika lolos, lakukan pengurangan stok
                 for (let item of cart) {
                     await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + 1);
                 }
@@ -191,7 +203,6 @@
                 resetCart();
 
             } catch (err) {
-                // Semua kegagalan akan berhenti di sini tanpa merusak data
                 alert("❌ GAGAL: " + err.message);
             } finally {
                 btn.innerText = "BAYAR SEKARANG ✅"; 
