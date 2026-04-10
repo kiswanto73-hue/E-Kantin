@@ -69,7 +69,6 @@
         let total = 0;
         const FONNTE_TOKEN = "eRiRwGfU96GqAyaMXM7Q"; 
 
-        // 1. LOAD MENU - MENGGUNAKAN .ON AGAR STOK SELALU UPDATE REALTIME
         function loadMenu() {
             db.ref('kantin_menus').on('value', snap => {
                 const container = document.getElementById('menuContainer'); 
@@ -126,10 +125,8 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
-        // 2. PROSES BAYAR - LOGIKA ATOMIK DENGAN PENGECEKAN JUMLAH (QTY)
         async function prosesBayar(idSiswa) {
             if(cart.length === 0) return alert("Pilih menu dulu!");
-            
             const btn = document.getElementById('btnCheckout');
             if (btn.disabled) return; 
 
@@ -139,24 +136,20 @@
             const trimmedId = idSiswa.trim();
             
             try {
-                // Step 1: Ambil data user & saldo
                 const userSnap = await db.ref('kantin_users/' + trimmedId).once('value');
                 const user = userSnap.val();
 
                 if(!user) throw new Error("KARTU TIDAK DIKENAL!");
-                if(user.saldo < total) throw new Error("SALDO KURANG! Sisa: Rp " + user.saldo.toLocaleString());
+                if(user.saldo < total) throw new Error("SALDO KURANG!");
 
-                // --- HITUNG JUMLAH (QTY) TIAP ITEM DI KERANJANG ---
+                // Hitung kebutuhan stok per item
                 const cartSummary = {};
                 cart.forEach(item => {
                     const key = `${item.stan}|${item.idMenu}`;
-                    if (!cartSummary[key]) {
-                        cartSummary[key] = { ...item, qty: 0 };
-                    }
+                    if (!cartSummary[key]) cartSummary[key] = { ...item, qty: 0 };
                     cartSummary[key].qty += 1;
                 });
 
-                // Step 2: Cek stok kolektif berdasarkan QTY pesanan
                 const menuSnap = await db.ref('kantin_menus').once('value');
                 const dataMenu = menuSnap.val();
 
@@ -164,36 +157,22 @@
                     const item = cartSummary[key];
                     const currentMenu = dataMenu[item.stan][item.idMenu];
                     const sisaStok = (currentMenu.stok_awal || 0) - (currentMenu.terjual || 0);
-                    
-                    if (sisaStok < item.qty) {
-                        throw new Error(`STOK KURANG: ${item.nama} sisa ${sisaStok}, tapi Bapak pesan ${item.qty}.`);
-                    }
+                    if (sisaStok < item.qty) throw new Error(`STOK KURANG: ${item.nama}`);
                 }
 
-                // Step 3: Jika lolos, lakukan pengurangan stok
+                // Eksekusi potong stok & saldo
                 for (let item of cart) {
                     await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + 1);
                 }
-
-                // Step 4: Update Saldo Siswa
                 const saldoBaru = user.saldo - total;
                 await db.ref('kantin_users/' + trimmedId + '/saldo').set(saldoBaru);
 
-                // Step 5: Catat Laporan
                 const waktu = new Date().toLocaleString('id-ID');
                 const itemNames = cart.map(i => i.nama).join(", ");
-                await db.ref('kantin_laporan').push({ 
-                    idSiswa: trimmedId, 
-                    namaSiswa: user.nama, 
-                    total, 
-                    item: itemNames, 
-                    waktu 
-                });
+                await db.ref('kantin_laporan').push({ idSiswa: trimmedId, namaSiswa: user.nama, total, item: itemNames, waktu });
 
-                // Step 6: Kirim WA Gateway
                 if (user.wa) {
-                    const detailWA = cart.map(i => `- ${i.nama} (Rp ${i.harga.toLocaleString()})`).join("\n");
-                    const pesan = `*STRUK DIGITAL SDN 169*\nNama: *${user.nama}*\n\n${detailWA}\n*Total: Rp ${total.toLocaleString()}*\n*Sisa Saldo: Rp ${saldoBaru.toLocaleString()}*`;
+                    const pesan = `*STRUK DIGITAL*\nNama: *${user.nama}*\nTotal: *Rp ${total.toLocaleString()}*\nSisa: *Rp ${saldoBaru.toLocaleString()}*`;
                     const fd = new FormData();
                     fd.append('target', user.wa); fd.append('message', pesan);
                     fetch('https://api.fonnte.com/send', { method:'POST', headers:{'Authorization':FONNTE_TOKEN}, body:fd });
@@ -210,15 +189,20 @@
             }
         }
 
-        // 3. SCANNER BLUETOOTH
         let barcodeBuffer = "";
         let lastKeyTime = Date.now();
         window.addEventListener("keydown", (e) => {
             const currentTime = Date.now();
-            if (currentTime - lastKeyTime > 100) barcodeBuffer = "";
+            if (currentTime - lastKeyTime > 50) barcodeBuffer = "";
             if (e.key === "Enter") {
-                if (barcodeBuffer.length > 0) { prosesBayar(barcodeBuffer); barcodeBuffer = ""; }
-            } else if (e.key.length === 1) { barcodeBuffer += e.key; }
+                if (barcodeBuffer.length > 2) { 
+                    e.preventDefault();
+                    prosesBayar(barcodeBuffer); 
+                    barcodeBuffer = ""; 
+                }
+            } else if (e.key.length === 1) {
+                barcodeBuffer += e.key;
+            }
             lastKeyTime = currentTime;
         });
 
