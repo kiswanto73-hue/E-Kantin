@@ -30,7 +30,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-emerald-500">
                 <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Omzet (Belanja)</h3>
                 <p id="totalOmzet" class="text-2xl font-black text-slate-800">Rp 0</p>
@@ -40,22 +40,15 @@
                 <p id="totalDeposit" class="text-2xl font-black text-indigo-700">Rp 0</p>
             </div>
             <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-orange-500">
-                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Saldo Harian</h3>
+                <h3 class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Jatah Harian</h3>
                 <p id="totalSaldoHarianSiswa" class="text-2xl font-black text-orange-600">Rp 0</p>
             </div>
-            
-            <div class="bg-white p-4 rounded-[2rem] shadow-sm flex flex-col border-t-4 border-slate-700">
-                <div class="flex justify-between items-center mb-1">
-                    <h3 class="text-[8px] font-black text-slate-400 uppercase">Stok Menu</h3>
-                    <button onclick="loadStokChart()" class="text-[8px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold hover:bg-indigo-700 hover:text-white transition-all">UPDATE 🔄</button>
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-slate-800 text-center flex flex-col gap-2 justify-center">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[8px] font-black uppercase">Excel Laporan</button>
+                    <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[8px] font-black uppercase">Excel Saldo</button>
                 </div>
-                <div class="w-full h-[80px]"><canvas id="chartStok"></canvas></div>
-            </div>
-
-            <div class="bg-white p-5 rounded-[2rem] shadow-sm border-t-4 border-slate-800 text-center flex flex-col gap-2">
-                <button onclick="downloadLaporan()" class="bg-green-600 text-white p-2 rounded-xl text-[9px] font-black uppercase">Excel Transaksi 📄</button>
-                <button onclick="downloadSaldo()" class="bg-emerald-500 text-white p-2 rounded-xl text-[9px] font-black uppercase">Excel Saldo 💰</button>
-                <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase">Cetak Portrait 🖨️</button>
+                <button onclick="cetakKolektif()" class="bg-slate-800 text-white p-2 rounded-xl text-[9px] font-black uppercase w-full">Cetak Kartu Portrait 🖨️</button>
             </div>
         </div>
 
@@ -90,6 +83,17 @@
             </div>
 
             <div class="lg:col-span-8 space-y-6">
+                
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase">Monitoring Stok Menu (Awal vs Sisa)</h3>
+                        <button onclick="loadStokChart()" class="text-[9px] bg-indigo-600 text-white px-3 py-1 rounded-full font-bold hover:bg-indigo-700 transition-all">REFRESH GRAFIK 🔄</button>
+                    </div>
+                    <div class="w-full h-[300px]">
+                        <canvas id="chartStok"></canvas>
+                    </div>
+                </div>
+
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border overflow-hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-[10px] font-black text-slate-400 uppercase">Riwayat Transaksi</h3>
@@ -143,7 +147,6 @@
         const auth = firebase.auth();
         let myChart = null;
 
-        // AUTH CHECK
         auth.onAuthStateChanged(user => {
             if (user) { 
                 loadData(); 
@@ -153,42 +156,40 @@
             }
         });
 
-        // FUNGSI RESET TRANSAKSI HARIAN
         async function resetTransaksiHarian() {
-            if (confirm("⚠️ PERINGATAN: Ini akan menghapus SEMUA Riwayat Transaksi dan mereset 'Terjual' di stok menu menjadi 0. Saldo utama siswa TETAP AMAN. Lanjutkan?")) {
+            if (confirm("⚠️ PERINGATAN: Ini akan menghapus SEMUA Riwayat Transaksi. Lanjutkan?")) {
                 try {
-                    // 1. Hapus riwayat laporan
                     await db.ref('kantin_laporan').remove();
-                    
-                    // 2. Reset angka terjual di menu
                     const menuSnap = await db.ref('kantin_menus').once('value');
                     menuSnap.forEach(stanSnap => {
                         stanSnap.forEach(itemSnap => {
                             itemSnap.ref.update({ terjual: 0 });
                         });
                     });
-                    
-                    alert("Berhasil! Sistem siap untuk hari baru.");
+                    alert("Berhasil reset hari baru!");
                     loadData();
                     loadStokChart();
-                } catch (e) {
-                    alert("Gagal reset: " + e.message);
-                }
+                } catch (e) { alert("Gagal: " + e.message); }
             }
         }
 
-        // FUNGSI GRAFIK STOK (.once)
+        // FUNGSI GRAFIK STOK DIPERBARUI (STOK AWAL VS SISA)
         function loadStokChart() {
             db.ref('kantin_menus').once('value').then(snap => {
                 let labels = [];
-                let sisaStok = [];
+                let dataAwal = [];
+                let dataSisa = [];
                 
                 snap.forEach(stanSnap => {
                     stanSnap.forEach(menuSnap => {
                         const m = menuSnap.val();
                         labels.push(m.nama);
-                        const sisa = (Number(m.stok_awal) || 0) - (Number(m.terjual) || 0);
-                        sisaStok.push(sisa < 0 ? 0 : sisa);
+                        const awal = Number(m.stok_awal) || 0;
+                        const terjual = Number(m.terjual) || 0;
+                        const sisa = awal - terjual;
+                        
+                        dataAwal.push(awal);
+                        dataSisa.push(sisa < 0 ? 0 : sisa);
                     });
                 });
 
@@ -198,27 +199,42 @@
                     type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Sisa Stok',
-                            data: sisaStok,
-                            backgroundColor: '#4338ca',
-                            borderRadius: 5
-                        }]
+                        datasets: [
+                            {
+                                label: 'Stok Awal',
+                                data: dataAwal,
+                                backgroundColor: '#cbd5e1', // Slate 300
+                                borderRadius: 5,
+                                barPercentage: 0.8,
+                            },
+                            {
+                                label: 'Sisa Stok',
+                                data: dataSisa,
+                                backgroundColor: '#4338ca', // Indigo 700
+                                borderRadius: 5,
+                                barPercentage: 0.8,
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        plugins: { 
+                            legend: { 
+                                display: true, 
+                                position: 'top',
+                                labels: { font: { size: 10, weight: 'bold' } }
+                            } 
+                        },
                         scales: {
-                            y: { beginAtZero: true, ticks: { font: { size: 7 } } },
-                            x: { ticks: { font: { size: 6 }, maxRotation: 45, minRotation: 45 } }
+                            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+                            x: { ticks: { font: { size: 8, weight: 'bold' }, maxRotation: 45, minRotation: 45 } }
                         }
                     }
                 });
             });
         }
 
-        // FUNGSI UPDATE DATA SISWA
         function updateSiswa() {
             const id = document.getElementById('idSiswa').value.trim();
             const nm = document.getElementById('namaSiswa').value.toUpperCase().trim();
@@ -234,27 +250,23 @@
             }).then(() => {
                 alert("Data berhasil disimpan!");
                 ['idSiswa','namaSiswa','saldoSiswa','saldoHarian','waSiswa'].forEach(el => document.getElementById(el).value = "");
-            }).catch(err => alert("Gagal simpan: " + err.message));
+            });
         }
 
-        // FUNGSI LOAD DATA UTAMA
         function loadData() {
             const fTgl = document.getElementById('filterTanggal').value;
             const fKls = document.getElementById('filterKelas').value;
 
-            // Load Siswa
             db.ref('kantin_users').on('value', snap => {
                 let totalTabungan = 0;
                 const cont = document.getElementById('siswaList'); 
                 cont.innerHTML = "";
-                
                 snap.forEach(s => {
                     const d = s.val();
                     totalTabungan += (Number(d.saldo) || 0);
-                    
                     if(fKls === "SEMUA" || d.kelas === fKls) {
                         cont.innerHTML += `
-                        <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200">
+                        <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
                             <div>
                                 <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
                                 <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
@@ -273,23 +285,19 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalTabungan.toLocaleString();
             });
 
-            // Load Laporan
             db.ref('kantin_laporan').limitToLast(150).on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let omzet = 0; let topup = 0;
-
                 snap.forEach(l => {
                     const d = l.val();
                     const pts = d.waktu.split(',')[0].split('/');
                     const tgl = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
-
                     if (!fTgl || tgl === fTgl) {
                         if (d.item && d.item.includes("TOP UP")) {
                             topup += (Number(d.total) || 0);
                         } else if (d.item !== "TARIK TUNAI") {
                             omzet += (Number(d.total) || 0);
                         }
-
                         const c = (d.item && d.item.includes("TOP UP")) ? "text-orange-500" : "text-indigo-600";
                         body.innerHTML = `<tr>
                             <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
@@ -304,7 +312,6 @@
             });
         }
 
-        // TOOLS LAINNYA
         function isiForm(id, nm, kl, sl, wa, hr) { 
             document.getElementById('idSiswa').value = id; 
             document.getElementById('namaSiswa').value = nm; 
