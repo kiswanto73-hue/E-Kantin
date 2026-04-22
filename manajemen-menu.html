@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Menu & Stok - E-Kantin</title>
+    <title>Manajemen Menu & Profit - E-Kantin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-100 p-4 min-h-screen font-sans">
 
@@ -14,17 +15,17 @@
         <div class="bg-indigo-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-6 flex justify-between items-center border-b-8 border-emerald-400">
             <div>
                 <h1 class="text-xl font-black italic tracking-tighter uppercase leading-none">Manajemen Menu 📋</h1>
-                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Audit Stok Otomatis Real-Time</p>
+                <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Audit Stok & Profit Real-Time</p>
             </div>
             <div class="flex gap-2">
-                <a href="admin-kantin.html" class="bg-white/10 hover:bg-white/20 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border border-white/10">Monitoring</a>
+                <button onclick="downloadLaporan()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all shadow-lg text-white">Laporan</button>
                 <a href="index.html" class="bg-red-500 hover:bg-red-600 px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all shadow-lg">Portal</a>
             </div>
         </div>
 
         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm mb-8 border border-indigo-50">
             <h3 class="text-[10px] font-black text-indigo-900 mb-4 uppercase italic flex items-center gap-2">
-                <span class="bg-indigo-100 p-1 px-2 rounded-lg">✨</span> Kendali Menu & Stok
+                <span class="bg-indigo-100 p-1 px-2 rounded-lg">✨</span> Kendali Menu, Stok & Modal
             </h3>
             <div class="space-y-4">
                 <select id="selectStan" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-indigo-900">
@@ -37,18 +38,23 @@
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1 text-center">
-                        <label class="text-[8px] font-black text-slate-400 uppercase">Harga (Rp)</label>
-                        <input type="number" id="hargaMenu" placeholder="10000" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-indigo-500">
+                        <label class="text-[8px] font-black text-slate-400 uppercase">Harga Jual (Rp)</label>
+                        <input type="number" id="hargaMenu" placeholder="1000" class="w-full p-4 bg-slate-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-indigo-500">
+                    </div>
+                    <div class="space-y-1 text-center">
+                        <label class="text-[8px] font-black text-rose-400 uppercase italic">Harga Modal/Titip (Rp)</label>
+                        <input type="number" id="hargaModal" placeholder="900" class="w-full p-4 bg-rose-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-rose-500 text-rose-700">
                     </div>
                     <div class="space-y-1 text-center">
                         <label class="text-[8px] font-black text-emerald-500 uppercase">Stok Pagi (Awal)</label>
                         <input type="number" id="stokAwal" placeholder="50" class="w-full p-4 bg-emerald-50 rounded-2xl font-black text-xs text-center outline-none focus:ring-2 ring-emerald-500 text-emerald-700">
                     </div>
+                    <div class="flex items-end">
+                        <button onclick="simpanMenu()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-[0.98] transition-all uppercase text-[10px]">
+                            Simpan 🚀
+                        </button>
+                    </div>
                 </div>
-
-                <button onclick="simpanMenu()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-[0.98] transition-all uppercase text-[10px] tracking-[0.2em]">
-                    Simpan & Update Database 🚀
-                </button>
             </div>
         </div>
 
@@ -58,7 +64,6 @@
     </div>
 
     <script>
-        // SINKRONISASI FIREBASE
         if (sessionStorage.getItem("ownerLoggedIn") !== "true") { window.location.replace("index.html"); }
 
         const firebaseConfig = {
@@ -77,6 +82,7 @@
             const stan = document.getElementById('selectStan').value;
             const nama = document.getElementById('namaMenu').value.trim().toUpperCase();
             const harga = parseInt(document.getElementById('hargaMenu').value);
+            const modal = parseInt(document.getElementById('hargaModal').value) || 0;
             const awal = parseInt(document.getElementById('stokAwal').value) || 0;
 
             if (nama && harga) {
@@ -89,20 +95,25 @@
                     db.ref('kantin_menus/' + stan + '/' + menuId).update({
                         nama: nama,
                         harga: harga,
+                        harga_modal: modal,
                         stok_awal: awal,
                         stok_akhir: (awal - terjualSekarang), 
                         terjual: terjualSekarang
                     }).then(() => {
                         alert("✅ DATA BERHASIL DIPERBARUI!");
-                        document.getElementById('namaMenu').value = "";
-                        document.getElementById('hargaMenu').value = "";
-                        document.getElementById('stokAwal').value = "";
+                        clearForm();
                     });
                 });
             } else { alert("Isi Nama & Harga!"); }
         }
 
-        // PERBAIKAN: Render lebih efisien untuk menghilangkan lag
+        function clearForm() {
+            document.getElementById('namaMenu').value = "";
+            document.getElementById('hargaMenu').value = "";
+            document.getElementById('hargaModal').value = "";
+            document.getElementById('stokAwal').value = "";
+        }
+
         db.ref('kantin_menus').on('value', snapshot => {
             const container = document.getElementById('displayMenu');
             if(!snapshot.exists()) {
@@ -110,8 +121,7 @@
                 return;
             }
 
-            let allContent = ""; // String buffer untuk menampung HTML
-
+            let allContent = "";
             snapshot.forEach(stanSnap => {
                 const namaStan = stanSnap.key;
                 let htmlStan = `<div class="bg-white rounded-[2.5rem] shadow-sm mb-6 border border-slate-100 overflow-hidden">
@@ -123,47 +133,60 @@
                     const m = menuSnap.val();
                     const mId = menuSnap.key;
                     const sisaStok = (m.stok_awal || 0) - (m.terjual || 0);
+                    const hModal = m.harga_modal || 0;
+                    const totalModal = (m.terjual || 0) * hModal;
+                    const labaKantin = ((m.harga || 0) - hModal) * (m.terjual || 0);
 
                     htmlStan += `
                         <div class="p-5">
-                            <div class="flex justify-between items-center mb-3">
+                            <div class="flex justify-between items-start mb-3">
                                 <div>
                                     <p class="text-xs font-black text-slate-800 uppercase italic">${m.nama}</p>
-                                    <p class="text-[10px] font-bold text-indigo-600">Rp ${m.harga.toLocaleString()}</p>
+                                    <p class="text-[10px] font-bold text-indigo-600">Jual: Rp ${m.harga.toLocaleString()} <span class="text-rose-400 font-normal">/ Mod: ${hModal.toLocaleString()}</span></p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button onclick="editForm('${namaStan}','${mId}', '${m.nama.replace(/'/g, "\\'")}', ${m.harga}, ${m.stok_awal})" class="p-2 bg-slate-50 rounded-xl text-xs active:bg-indigo-100">✏️</button>
-                                    <button onclick="hapusMenu('${namaStan}', '${mId}')" class="p-2 bg-red-50 text-red-400 rounded-xl text-xs active:bg-red-100">🗑️</button>
+                                    <button onclick="editForm('${namaStan}','${mId}', '${m.nama.replace(/'/g, "\\'")}', ${m.harga}, ${hModal}, ${m.stok_awal})" class="p-2 bg-slate-50 rounded-xl text-xs">✏️</button>
+                                    <button onclick="hapusMenu('${namaStan}', '${mId}')" class="p-2 bg-red-50 text-red-400 rounded-xl text-xs">🗑️</button>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="bg-emerald-50 p-2 rounded-xl text-center">
+                            
+                            <div class="grid grid-cols-3 gap-2 mb-3">
+                                <div class="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100">
                                     <p class="text-[7px] font-black text-emerald-400 uppercase">Pagi</p>
                                     <p class="text-xs font-black text-emerald-700">${m.stok_awal || 0}</p>
                                 </div>
-                                <div class="bg-amber-50 p-2 rounded-xl text-center">
+                                <div class="bg-amber-50 p-2 rounded-xl text-center border border-amber-100">
                                     <p class="text-[7px] font-black text-amber-400 uppercase">Laku</p>
                                     <p class="text-xs font-black text-amber-700">${m.terjual || 0}</p>
                                 </div>
-                                <div class="bg-indigo-600 p-2 rounded-xl text-center">
+                                <div class="bg-indigo-600 p-2 rounded-xl text-center shadow-md">
                                     <p class="text-[7px] font-black text-indigo-200 uppercase">Sore</p>
                                     <p class="text-xs font-black text-white">${sisaStok < 0 ? 0 : sisaStok}</p>
                                 </div>
                             </div>
+
+                            <div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center">
+                                <div>
+                                    <p class="text-[7px] font-black text-slate-400 uppercase">Bayar Setor (Modal x Laku)</p>
+                                    <p class="text-[11px] font-black text-rose-600 italic">Rp ${totalModal.toLocaleString()}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[7px] font-black text-slate-400 uppercase">Laba Kantin</p>
+                                    <p class="text-[11px] font-black text-emerald-600 italic">Rp ${labaKantin.toLocaleString()}</p>
+                                </div>
+                            </div>
                         </div>`;
                 });
-                
                 allContent += htmlStan + `</div></div>`;
             });
-            
-            // Masukkan ke DOM hanya sekali di akhir loop
             container.innerHTML = allContent;
         });
 
-        function editForm(stan, id, nama, harga, awal) {
+        function editForm(stan, id, nama, harga, modal, awal) {
             document.getElementById('selectStan').value = stan;
             document.getElementById('namaMenu').value = nama;
             document.getElementById('hargaMenu').value = harga;
+            document.getElementById('hargaModal').value = modal;
             document.getElementById('stokAwal').value = awal;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -172,6 +195,49 @@
             if (confirm("Hapus menu ini dari database?")) {
                 db.ref('kantin_menus/' + stan + '/' + id).remove();
             }
+        }
+
+        // FUNGSI DOWNLOAD LAPORAN
+        function downloadLaporan() {
+            db.ref('kantin_menus').once('value', snapshot => {
+                let dataExport = [];
+                let grandTotalSetor = 0;
+                let grandTotalLaba = 0;
+
+                snapshot.forEach(stanSnap => {
+                    stanSnap.forEach(menuSnap => {
+                        const m = menuSnap.val();
+                        const terjual = m.terjual || 0;
+                        const modal = m.harga_modal || 0;
+                        const harga = m.harga || 0;
+                        const bayarSetor = terjual * modal;
+                        const laba = (harga - modal) * terjual;
+
+                        dataExport.push({
+                            "STAN": stanSnap.key,
+                            "NAMA MENU": m.nama,
+                            "HARGA JUAL": harga,
+                            "HARGA MODAL": modal,
+                            "STOK AWAL": m.stok_awal || 0,
+                            "TERJUAL": terjual,
+                            "SISA": (m.stok_awal || 0) - terjual,
+                            "TOTAL OMSET": harga * terjual,
+                            "WAJIB BAYAR (KE PENYETOR)": bayarSetor,
+                            "LABA KANTIN": laba
+                        });
+                        grandTotalSetor += bayarSetor;
+                        grandTotalLaba += laba;
+                    });
+                });
+
+                dataExport.push({}); // Baris kosong
+                dataExport.push({ "NAMA MENU": "GRAND TOTAL", "WAJIB BAYAR (KE PENYETOR)": grandTotalSetor, "LABA KANTIN": grandTotalLaba });
+
+                const ws = XLSX.utils.json_to_sheet(dataExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Laporan_Harian");
+                XLSX.writeFile(wb, `Laporan_Kantin_${new Date().toLocaleDateString()}.xlsx`);
+            });
         }
     </script>
 </body>
