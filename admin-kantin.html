@@ -270,16 +270,19 @@
         function logout() { auth.signOut().then(() => location.href = "login.html"); }
         function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users').child(id).remove(); }
         
-        // FUNGSI DOWNLOAD EXCEL DENGAN KOLOM KELAS
+        // FUNGSI DOWNLOAD EXCEL DENGAN PERBAIKAN KOLOM KELAS
         function downloadLaporan() {
             db.ref('kantin_laporan').once('value', snap => {
                 let dataExcel = [];
                 snap.forEach(l => {
                     const d = l.val();
+                    // Mengambil kelas dari 'kelasSiswa' atau 'kelas', jika keduanya tidak ada tampilkan '-'
+                    const kls = d.kelasSiswa || d.kelas || '-';
+                    
                     dataExcel.push({
                         'WAKTU': d.waktu,
                         'NAMA': d.namaSiswa,
-                        'KELAS': d.kelasSiswa || d.kelas || '-',
+                        'KELAS': kls,
                         'ITEM': d.item,
                         'TOTAL': d.total
                     });
