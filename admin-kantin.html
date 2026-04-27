@@ -65,6 +65,7 @@
                             <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
                             <option value="GURU">Guru / Staf</option>
+                            <option value="TAMU">TAMU / UMUM</option>
                         </select>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -83,10 +84,9 @@
             </div>
 
             <div class="lg:col-span-8 space-y-6">
-                
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase">Monitoring Stok Menu (Awal vs Sisa)</h3>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase">Monitoring Stok Menu</h3>
                         <button onclick="loadStokChart()" class="text-[9px] bg-indigo-600 text-white px-3 py-1 rounded-full font-bold hover:bg-indigo-700 transition-all">REFRESH GRAFIK 🔄</button>
                     </div>
                     <div class="w-full h-[300px]">
@@ -99,12 +99,13 @@
                         <h3 class="text-[10px] font-black text-slate-400 uppercase">Riwayat Transaksi</h3>
                         <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none">
                     </div>
-                    <div class="overflow-x-auto max-h-[300px]">
+                    <div class="overflow-x-auto max-h-[400px]">
                         <table class="w-full text-[10px] text-left" id="tabelLaporan">
                             <thead class="bg-slate-50 sticky top-0">
                                 <tr class="text-slate-400 border-b">
                                     <th class="p-3">Waktu</th>
                                     <th>Siswa</th>
+                                    <th>Kelas</th>
                                     <th>Item</th>
                                     <th class="text-right p-3">Total</th>
                                 </tr>
@@ -123,6 +124,7 @@
                             <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
                             <option value="GURU">GURU/STAF</option>
+                            <option value="TAMU">TAMU</option>
                         </select>
                     </div>
                     <div id="siswaList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto"></div>
@@ -132,7 +134,6 @@
     </div>
 
     <script>
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCUjE8WXa8Py4vnojrXDUR3uCvnQEzP6zQ",
             authDomain: "e-kantin-91f0c.firebaseapp.com",
@@ -148,12 +149,8 @@
         let myChart = null;
 
         auth.onAuthStateChanged(user => {
-            if (user) { 
-                loadData(); 
-                loadStokChart();
-            } else { 
-                window.location.href = "login.html"; 
-            }
+            if (user) { loadData(); loadStokChart(); } 
+            else { window.location.href = "login.html"; }
         });
 
         async function resetTransaksiHarian() {
@@ -167,19 +164,14 @@
                         });
                     });
                     alert("Berhasil reset hari baru!");
-                    loadData();
-                    loadStokChart();
+                    loadData(); loadStokChart();
                 } catch (e) { alert("Gagal: " + e.message); }
             }
         }
 
-        // FUNGSI GRAFIK STOK DIPERBARUI (STOK AWAL VS SISA)
         function loadStokChart() {
             db.ref('kantin_menus').once('value').then(snap => {
-                let labels = [];
-                let dataAwal = [];
-                let dataSisa = [];
-                
+                let labels = []; let dataAwal = []; let dataSisa = [];
                 snap.forEach(stanSnap => {
                     stanSnap.forEach(menuSnap => {
                         const m = menuSnap.val();
@@ -187,12 +179,10 @@
                         const awal = Number(m.stok_awal) || 0;
                         const terjual = Number(m.terjual) || 0;
                         const sisa = awal - terjual;
-                        
                         dataAwal.push(awal);
                         dataSisa.push(sisa < 0 ? 0 : sisa);
                     });
                 });
-
                 const ctx = document.getElementById('chartStok').getContext('2d');
                 if (myChart) myChart.destroy();
                 myChart = new Chart(ctx, {
@@ -200,37 +190,11 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            {
-                                label: 'Stok Awal',
-                                data: dataAwal,
-                                backgroundColor: '#cbd5e1', // Slate 300
-                                borderRadius: 5,
-                                barPercentage: 0.8,
-                            },
-                            {
-                                label: 'Sisa Stok',
-                                data: dataSisa,
-                                backgroundColor: '#4338ca', // Indigo 700
-                                borderRadius: 5,
-                                barPercentage: 0.8,
-                            }
+                            { label: 'Stok Awal', data: dataAwal, backgroundColor: '#cbd5e1', borderRadius: 5 },
+                            { label: 'Sisa Stok', data: dataSisa, backgroundColor: '#4338ca', borderRadius: 5 }
                         ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { 
-                                display: true, 
-                                position: 'top',
-                                labels: { font: { size: 10, weight: 'bold' } }
-                            } 
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
-                            x: { ticks: { font: { size: 8, weight: 'bold' }, maxRotation: 45, minRotation: 45 } }
-                        }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
                 });
             });
         }
@@ -242,12 +206,9 @@
             const sl = parseInt(document.getElementById('saldoSiswa').value) || 0;
             const hr = parseInt(document.getElementById('saldoHarian').value) || 0;
             const wa = document.getElementById('waSiswa').value.trim();
-            
             if(!id || !nm || !kl) return alert("Harap isi ID, Nama, dan Kelas!");
-
-            db.ref('kantin_users/' + id).set({
-                id, nama: nm, kelas: kl, saldo: sl, saldo_harian: hr, wa: wa
-            }).then(() => {
+            db.ref('kantin_users/' + id).set({ id, nama: nm, kelas: kl, saldo: sl, saldo_harian: hr, wa: wa })
+            .then(() => {
                 alert("Data berhasil disimpan!");
                 ['idSiswa','namaSiswa','saldoSiswa','saldoHarian','waSiswa'].forEach(el => document.getElementById(el).value = "");
             });
@@ -256,36 +217,24 @@
         function loadData() {
             const fTgl = document.getElementById('filterTanggal').value;
             const fKls = document.getElementById('filterKelas').value;
-
             db.ref('kantin_users').on('value', snap => {
-                let totalTabungan = 0;
-                const cont = document.getElementById('siswaList'); 
-                cont.innerHTML = "";
+                let totalTabungan = 0; const cont = document.getElementById('siswaList'); cont.innerHTML = "";
                 snap.forEach(s => {
-                    const d = s.val();
-                    totalTabungan += (Number(d.saldo) || 0);
+                    const d = s.val(); totalTabungan += (Number(d.saldo) || 0);
                     if(fKls === "SEMUA" || d.kelas === fKls) {
-                        cont.innerHTML += `
-                        <div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
-                            <div>
-                                <span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
-                                <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
-                                <div class="flex gap-2 mt-1 font-bold text-[9px]">
-                                    <span class="text-emerald-600">D: Rp ${Number(d.saldo).toLocaleString()}</span>
-                                    <span class="text-orange-500">H: Rp ${Number(d.saldo_harian).toLocaleString()}</span>
-                                </div>
-                            </div>
-                            <div class="flex gap-1">
-                                <button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa||''}',${d.saldo_harian||0})" class="p-2 bg-indigo-100 text-indigo-600 rounded-lg text-[8px] font-black">EDIT</button>
-                                <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg text-[8px]">×</button>
-                            </div>
-                        </div>`;
+                        cont.innerHTML += `<div class="p-3 bg-white rounded-2xl flex justify-between items-center border border-slate-200 shadow-sm">
+                            <div><span class="bg-indigo-600 text-white text-[7px] font-black px-2 py-0.5 rounded-md uppercase">${d.kelas}</span>
+                            <p class="text-[10px] font-black text-slate-700 uppercase mt-1 leading-none">${d.nama}</p>
+                            <div class="flex gap-2 mt-1 font-bold text-[9px]"><span class="text-emerald-600">D: Rp ${Number(d.saldo).toLocaleString()}</span>
+                            <span class="text-orange-500">H: Rp ${Number(d.saldo_harian).toLocaleString()}</span></div></div>
+                            <div class="flex gap-1"><button onclick="isiForm('${d.id}','${d.nama}','${d.kelas}',${d.saldo},'${d.wa||''}',${d.saldo_harian||0})" class="p-2 bg-indigo-100 text-indigo-600 rounded-lg text-[8px] font-black">EDIT</button>
+                            <button onclick="hapusSiswa('${d.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg text-[8px]">×</button></div></div>`;
                     }
                 });
                 document.getElementById('totalDeposit').innerText = "Rp " + totalTabungan.toLocaleString();
             });
 
-            db.ref('kantin_laporan').limitToLast(150).on('value', snap => {
+            db.ref('kantin_laporan').limitToLast(200).on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let omzet = 0; let topup = 0;
                 snap.forEach(l => {
@@ -293,18 +242,14 @@
                     const pts = d.waktu.split(',')[0].split('/');
                     const tgl = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
                     if (!fTgl || tgl === fTgl) {
-                        if (d.item && d.item.includes("TOP UP")) {
-                            topup += (Number(d.total) || 0);
-                        } else if (d.item !== "TARIK TUNAI") {
-                            omzet += (Number(d.total) || 0);
-                        }
+                        if (d.item && d.item.includes("TOP UP")) { topup += (Number(d.total) || 0); } 
+                        else if (d.item !== "TARIK TUNAI") { omzet += (Number(d.total) || 0); }
                         const c = (d.item && d.item.includes("TOP UP")) ? "text-orange-500" : "text-indigo-600";
-                        body.innerHTML = `<tr>
-                            <td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
+                        body.innerHTML = `<tr><td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td class="uppercase">${d.namaSiswa}</td>
+                            <td class="text-slate-500 text-[9px] uppercase">${d.kelasSiswa || d.kelas || '-'}</td>
                             <td class="${c} font-black text-[9px] uppercase italic">${d.item || 'BELANJA'}</td>
-                            <td class="text-right p-3 text-green-600 font-black">Rp ${Number(d.total).toLocaleString()}</td>
-                        </tr>` + body.innerHTML;
+                            <td class="text-right p-3 text-green-600 font-black">Rp ${Number(d.total).toLocaleString()}</td></tr>` + body.innerHTML;
                     }
                 });
                 document.getElementById('totalOmzet').innerText = "Rp " + omzet.toLocaleString();
@@ -324,7 +269,28 @@
 
         function logout() { auth.signOut().then(() => location.href = "login.html"); }
         function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users').child(id).remove(); }
-        function downloadLaporan() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById("tabelLaporan")), `Laporan_Kantin.xlsx`); }
+        
+        // FUNGSI DOWNLOAD EXCEL DENGAN KOLOM KELAS
+        function downloadLaporan() {
+            db.ref('kantin_laporan').once('value', snap => {
+                let dataExcel = [];
+                snap.forEach(l => {
+                    const d = l.val();
+                    dataExcel.push({
+                        'WAKTU': d.waktu,
+                        'NAMA': d.namaSiswa,
+                        'KELAS': d.kelasSiswa || d.kelas || '-',
+                        'ITEM': d.item,
+                        'TOTAL': d.total
+                    });
+                });
+                const ws = XLSX.utils.json_to_sheet(dataExcel);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Laporan Transaksi");
+                XLSX.writeFile(wb, "Laporan_Kantin_Lengkap.xlsx");
+            });
+        }
+
         function downloadSaldo() {
             db.ref('kantin_users').once('value', snap => {
                 let list = []; snap.forEach(s => { list.push({ 'NAMA': s.val().nama, 'KELAS': s.val().kelas, 'SALDO': s.val().saldo, 'HARIAN': s.val().saldo_harian }); });
