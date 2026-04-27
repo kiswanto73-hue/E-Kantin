@@ -97,7 +97,7 @@
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border overflow-hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-[10px] font-black text-slate-400 uppercase">Riwayat Transaksi</h3>
-                        <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none border-2 border-indigo-200">
+                        <input type="date" id="filterTanggal" onchange="loadData()" class="p-2 bg-slate-100 rounded-lg text-[10px] font-bold outline-none">
                     </div>
                     <div class="overflow-x-auto max-h-[400px]">
                         <table class="w-full text-[10px] text-left" id="tabelLaporan">
@@ -153,14 +153,15 @@
             else { window.location.href = "login.html"; }
         });
 
-        // Fitur Reset
         async function resetTransaksiHarian() {
             if (confirm("⚠️ PERINGATAN: Ini akan menghapus SEMUA Riwayat Transaksi. Lanjutkan?")) {
                 try {
                     await db.ref('kantin_laporan').remove();
                     const menuSnap = await db.ref('kantin_menus').once('value');
                     menuSnap.forEach(stanSnap => {
-                        stanSnap.forEach(itemSnap => { itemSnap.ref.update({ terjual: 0 }); });
+                        stanSnap.forEach(itemSnap => {
+                            itemSnap.ref.update({ terjual: 0 });
+                        });
                     });
                     alert("Berhasil reset hari baru!");
                     loadData(); loadStokChart();
@@ -168,7 +169,6 @@
             }
         }
 
-        // Fitur Grafik
         function loadStokChart() {
             db.ref('kantin_menus').once('value').then(snap => {
                 let labels = []; let dataAwal = []; let dataSisa = [];
@@ -194,7 +194,7 @@
                             { label: 'Sisa Stok', data: dataSisa, backgroundColor: '#4338ca', borderRadius: 5 }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
                 });
             });
         }
@@ -234,20 +234,21 @@
                 document.getElementById('totalDeposit').innerText = "Rp " + totalTabungan.toLocaleString();
             });
 
-            db.ref('kantin_laporan').on('value', snap => {
+            db.ref('kantin_laporan').limitToLast(200).on('value', snap => {
                 const body = document.getElementById('logTableBody'); body.innerHTML = "";
                 let omzet = 0; let topup = 0;
                 snap.forEach(l => {
                     const d = l.val();
                     const pts = d.waktu.split(',')[0].split('/');
-                    const tgl = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : "";
+                    const tgl = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : d.waktu.split(' ')[0];
                     if (!fTgl || tgl === fTgl) {
                         if (d.item && d.item.includes("TOP UP")) { topup += (Number(d.total) || 0); } 
                         else if (d.item !== "TARIK TUNAI") { omzet += (Number(d.total) || 0); }
+                        const c = (d.item && d.item.includes("TOP UP")) ? "text-orange-500" : "text-indigo-600";
                         body.innerHTML = `<tr><td class="p-3 text-slate-400 font-normal">${d.waktu}</td>
                             <td class="uppercase">${d.namaSiswa}</td>
                             <td class="text-slate-500 text-[9px] uppercase">${d.kelasSiswa || d.kelas || '-'}</td>
-                            <td class="font-black text-[9px] uppercase italic">${d.item || 'BELANJA'}</td>
+                            <td class="${c} font-black text-[9px] uppercase italic">${d.item || 'BELANJA'}</td>
                             <td class="text-right p-3 text-green-600 font-black">Rp ${Number(d.total).toLocaleString()}</td></tr>` + body.innerHTML;
                     }
                 });
@@ -256,12 +257,21 @@
             });
         }
 
-        // --- PERBAIKAN DOWNLOAD LAPORAN: PISAH KOLOM & SESUAI FILTER TANGGAL ---
-        async function downloadLaporan() {
-            const fTgl = document.getElementById('filterTanggal').value;
-            if(!fTgl) return alert("Silakan pilih TANGGAL pada filter terlebih dahulu!");
+        function isiForm(id, nm, kl, sl, wa, hr) { 
+            document.getElementById('idSiswa').value = id; 
+            document.getElementById('namaSiswa').value = nm; 
+            document.getElementById('kelasSiswa').value = kl; 
+            document.getElementById('saldoSiswa').value = sl; 
+            document.getElementById('saldoHarian').value = hr || 0; 
+            document.getElementById('waSiswa').value = wa; 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        }
 
-            // Ambil data User untuk jaga-jaga kelas kosong
+        function logout() { auth.signOut().then(() => location.href = "login.html"); }
+        function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users').child(id).remove(); }
+        
+        // --- MODIFIKASI PEMISAHAN KOLOM TANGGAL & JAM ---
+        async function downloadLaporan() {
             const usersSnap = await db.ref('kantin_users').once('value');
             const userRefKelas = {};
             usersSnap.forEach(u => { userRefKelas[u.val().nama] = u.val().kelas; });
@@ -270,51 +280,35 @@
                 let dataExcel = [];
                 snap.forEach(l => {
                     const d = l.val();
-                    // Cek Tanggal Laporan
-                    const pts = d.waktu.split(',')[0].split('/');
-                    const tglLaporan = (pts.length === 3) ? `${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}` : "";
-
-                    // HANYA masukkan data yang tanggalnya sama dengan Filter
-                    if (tglLaporan === fTgl) {
-                        const klsFinal = d.kelasSiswa || d.kelas || userRefKelas[d.namaSiswa] || '-';
-                        
-                        // Memisahkan Tanggal dan Jam
-                        let tglSaja = "-";
-                        let jamSaja = "-";
-                        if(d.waktu && d.waktu.includes(",")) {
-                            const splitWaktu = d.waktu.split(",");
-                            tglSaja = splitWaktu[0].trim();
-                            jamSaja = splitWaktu[1].trim();
-                        }
-
-                        dataExcel.push({
-                            'TANGGAL': tglSaja,
-                            'JAM': jamSaja,
-                            'NAMA SISWA': d.namaSiswa,
-                            'KELAS': klsFinal,
-                            'NAMA MENU / ITEM': d.item,
-                            'TOTAL HARGA': d.total
-                        });
+                    const klsFinal = d.kelasSiswa || d.kelas || userRefKelas[d.namaSiswa] || '-';
+                    
+                    // Memecah Waktu (Format: 27/04/2026, 11.58.00)
+                    let tgl = "-";
+                    let jam = "-";
+                    if(d.waktu && d.waktu.includes(",")) {
+                        const bagian = d.waktu.split(",");
+                        tgl = bagian[0].trim();
+                        jam = bagian[1].trim();
+                    } else {
+                        tgl = d.waktu; // Jika tidak ada koma, masukkan semua ke kolom tanggal
                     }
+
+                    dataExcel.push({
+                        'TANGGAL': tgl,
+                        'JAM': jam,
+                        'NAMA': d.namaSiswa,
+                        'KELAS': klsFinal,
+                        'ITEM': d.item,
+                        'TOTAL': d.total
+                    });
                 });
-
-                if(dataExcel.length === 0) return alert("Tidak ada data transaksi pada tanggal " + fTgl);
-
                 const ws = XLSX.utils.json_to_sheet(dataExcel);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Laporan");
-                XLSX.writeFile(wb, `Laporan_Kantin_${fTgl}.xlsx`);
+                XLSX.utils.book_append_sheet(wb, ws, "Laporan Transaksi");
+                XLSX.writeFile(wb, "Laporan_Kantin_Terpisah_Waktu.xlsx");
             });
         }
 
-        function isiForm(id, nm, kl, sl, wa, hr) { 
-            document.getElementById('idSiswa').value = id; document.getElementById('namaSiswa').value = nm; 
-            document.getElementById('kelasSiswa').value = kl; document.getElementById('saldoSiswa').value = sl; 
-            document.getElementById('saldoHarian').value = hr || 0; document.getElementById('waSiswa').value = wa; 
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        }
-        function logout() { auth.signOut().then(() => location.href = "login.html"); }
-        function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users').child(id).remove(); }
         function downloadSaldo() {
             db.ref('kantin_users').once('value', snap => {
                 let list = []; snap.forEach(s => { list.push({ 'NAMA': s.val().nama, 'KELAS': s.val().kelas, 'SALDO': s.val().saldo, 'HARIAN': s.val().saldo_harian }); });
