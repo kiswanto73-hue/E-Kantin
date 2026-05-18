@@ -130,24 +130,39 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
-        // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH ---
+        // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH (VERSI UNIVERSAL ANTI-GATT ERROR) ---
         async function hubungkanPrinter() {
             try {
+                // Mencari perangkat Bluetooth secara bebas tanpa filter ketat UUID yang memicu limitasi keamanan browser
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }, { namePrefix: 'RPP' }, { namePrefix: 'MTP' }, { namePrefix: 'PT' }],
-                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '000018f0-0000-1000-8000-00805f9b34fb', // Protokol Umum 1
+                        '0000ff00-0000-1000-8000-00805f9b34fb', // Protokol Umum 2
+                        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'  // Protokol Umum 3
+                    ]
                 });
+                
                 const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+                const services = await server.getPrimaryServices();
+                if (services.length === 0) throw new Error("Service Bluetooth printer tidak ditemukan!");
+                
+                const service = services[0];
                 const characteristics = await service.getCharacteristics();
-                printerCharacteristic = characteristics[0];
+                
+                // Cari alur kirim data yang mendukung penulisan bypass (writeWithoutResponse) agar tidak terkena cek perizinan GATT
+                printerCharacteristic = characteristics.find(c => c.properties.writeWithoutResponse || c.properties.write);
+                
+                if (!printerCharacteristic) {
+                    printerCharacteristic = characteristics[0];
+                }
                 
                 document.getElementById('btnHubungkanPrinter').classList.remove('bg-amber-500', 'border-amber-400');
                 document.getElementById('btnHubungkanPrinter').classList.add('bg-emerald-600', 'border-emerald-500');
                 document.getElementById('btnHubungkanPrinter').innerText = "🖨️ PRINTER TERKONEKSI";
                 alert("✅ Printer Thermal Sukses Terhubung!");
             } catch (err) {
-                alert("⚠️ Gagal menghubungkan printer: " + err.message + "\nPastikan Bluetooth HP/Laptop aktif dan Printer dalam kondisi menyala.");
+                alert("⚠️ Gagal menghubungkan printer: " + err.message + "\nPastikan Bluetooth aktif, Printer menyala, dan tidak terkoneksi ke aplikasi lain.");
             }
         }
 
@@ -158,7 +173,6 @@
                 return;
             }
 
-            // Membangun format struk belanja ukuran kertas 58mm
             let struk = "";
             struk += "    SDN 169 E-KANTIN    \n";
             struk += "     STRUK DIGITAL      \n";
@@ -185,17 +199,20 @@
             struk += "SALDO:" + " ".repeat(spasiSaldo) + saldoStr + "\n";
             struk += "========================\n";
             struk += "  Terima Kasih, Jajan  \n";
-            struk += "    Sehat Hari Ini!     \n\n\n\n"; // Beri jarak potong kertas
+            struk += "    Sehat Hari Ini!     \n\n\n\n";
 
-            // Encode teks string ke Uint8Array (Karakter standar printer)
             const encoder = new TextEncoder();
             const textBuffer = encoder.encode(struk);
             
-            // Kirim data ke printer dalam potongan kecil (Chunk maksimal 20 bytes agar tidak corupt)
             const CHUNK_SIZE = 20;
             for (let i = 0; i < textBuffer.length; i += CHUNK_SIZE) {
                 const chunk = textBuffer.slice(i, i + CHUNK_SIZE);
-                await printerCharacteristic.writeValue(chunk);
+                // Eksekusi penulisan bypass tanpa umpan balik izin jika didukung chip printer
+                if (printerCharacteristic.properties.writeWithoutResponse) {
+                    await printerCharacteristic.writeValueWithoutResponse(chunk);
+                } else {
+                    await printerCharacteristic.writeValue(chunk);
+                }
             }
         }
 
