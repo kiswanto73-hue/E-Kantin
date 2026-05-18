@@ -16,6 +16,7 @@
                 <h1 class="text-xl font-black italic uppercase text-yellow-400">PRO KASIR 🚀</h1>
                 <p class="text-[9px] font-bold opacity-60 uppercase tracking-widest italic">Scanner Bluetooth & WA Gateway: AKTIF</p>
             </div>
+            <button id="btnHubungkanPrinter" onclick="hubungkanPrinter()" class="bg-amber-500 p-6 rounded-[2rem] shadow font-black text-white text-xs mr-2 border-2 border-amber-400 transition-transform active:scale-90 flex items-center gap-1">🖨️ KONEK PRINTER</button>
             <button onclick="window.location.href='index.html'" class="bg-white p-6 rounded-[2rem] shadow font-black text-indigo-900 text-xs border-2 border-slate-100 transition-transform active:scale-90">PORTAL</button>
         </div>
 
@@ -70,6 +71,9 @@
         let total = 0;
         let isProcessing = false; // ANTI DOUBLE TRANSACTION LOCK
         const FONNTE_TOKEN = "eRiRwGfU96GqAyaMXM7Q"; 
+
+        // VARIABEL GLOBAL UNTUK PRINTER BLUETOOTH
+        let printerCharacteristic = null;
 
         function loadMenu() {
             db.ref('kantin_menus').on('value', snap => {
@@ -126,6 +130,75 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
+        // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH ---
+        async function hubungkanPrinter() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }, { namePrefix: 'RPP' }, { namePrefix: 'MTP' }, { namePrefix: 'PT' }],
+                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+                });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+                const characteristics = await service.getCharacteristics();
+                printerCharacteristic = characteristics[0];
+                
+                document.getElementById('btnHubungkanPrinter').classList.remove('bg-amber-500', 'border-amber-400');
+                document.getElementById('btnHubungkanPrinter').classList.add('bg-emerald-600', 'border-emerald-500');
+                document.getElementById('btnHubungkanPrinter').innerText = "🖨️ PRINTER TERKONEKSI";
+                alert("✅ Printer Thermal Sukses Terhubung!");
+            } catch (err) {
+                alert("⚠️ Gagal menghubungkan printer: " + err.message + "\nPastikan Bluetooth HP/Laptop aktif dan Printer dalam kondisi menyala.");
+            }
+        }
+
+        // --- FUNGSI CETAK TEKS KE PRINTER (ESC/POS COMMAND) ---
+        async function cetakStrukThermal(namaSiswa, rincianBarang, totalBayar, sisaSaldo, waktuTransaksi) {
+            if (!printerCharacteristic) {
+                console.log("Printer belum terhubung, cetak struk fisik dilewati.");
+                return;
+            }
+
+            // Membangun format struk belanja ukuran kertas 58mm
+            let struk = "";
+            struk += "    SDN 169 E-KANTIN    \n";
+            struk += "     STRUK DIGITAL      \n";
+            struk += "========================\n";
+            struk += `Waktu: ${waktuTransaksi}\n`;
+            struk += `Siswa: ${namaSiswa.toUpperCase()}\n`;
+            struk += "------------------------\n";
+            
+            rincianBarang.forEach(item => {
+                let baris = `${item.nama} x${item.qty}`;
+                let hargaStr = `Rp${(item.harga * item.qty).toLocaleString()}`;
+                let spasiKanan = 24 - baris.length - hargaStr.length;
+                if (spasiKanan < 1) spasiKanan = 1;
+                struk += baris + " ".repeat(spasiKanan) + hargaStr + "\n";
+            });
+            
+            struk += "------------------------\n";
+            let totalStr = `Rp${totalBayar.toLocaleString()}`;
+            let spasiTotal = 24 - "TOTAL:".length - totalStr.length;
+            struk += "TOTAL:" + " ".repeat(spasiTotal) + totalStr + "\n";
+            
+            let saldoStr = `Rp${sisaSaldo.toLocaleString()}`;
+            let spasiSaldo = 24 - "SALDO:".length - saldoStr.length;
+            struk += "SALDO:" + " ".repeat(spasiSaldo) + saldoStr + "\n";
+            struk += "========================\n";
+            struk += "  Terima Kasih, Jajan  \n";
+            struk += "    Sehat Hari Ini!     \n\n\n\n"; // Beri jarak potong kertas
+
+            // Encode teks string ke Uint8Array (Karakter standar printer)
+            const encoder = new TextEncoder();
+            const textBuffer = encoder.encode(struk);
+            
+            // Kirim data ke printer dalam potongan kecil (Chunk maksimal 20 bytes agar tidak corupt)
+            const CHUNK_SIZE = 20;
+            for (let i = 0; i < textBuffer.length; i += CHUNK_SIZE) {
+                const chunk = textBuffer.slice(i, i + CHUNK_SIZE);
+                await printerCharacteristic.writeValue(chunk);
+            }
+        }
+
         async function prosesBayar(idSiswa) {
             if(isProcessing) return; // JIKA SEDANG PROSES, ABAIKAN INPUT LAIN
             if(cart.length === 0) return alert("Pilih menu dulu!");
@@ -146,6 +219,7 @@
 
                 const cartSummary = {};
                 let teksRincianBelanja = "";
+                const arrayRincianUntukCetak = []; // Data rapi untuk printer
                 
                 cart.forEach(item => {
                     const key = `${item.stan}|${item.idMenu}`;
@@ -162,6 +236,7 @@
                     const sisaStok = (currentMenu.stok_awal || 0) - (currentMenu.terjual || 0);
                     if (sisaStok < item.qty) throw new Error(`STOK KURANG: ${item.nama}`);
                     teksRincianBelanja += `\n- ${item.nama} x${item.qty}`;
+                    arrayRincianUntukCetak.push(item);
                 }
 
                 // EKSEKUSI DATABASE
@@ -174,6 +249,9 @@
                 const waktu = new Date().toLocaleString('id-ID');
                 const itemNames = cart.map(i => i.nama).join(", ");
                 await db.ref('kantin_laporan').push({ idSiswa: trimmedId, namaSiswa: user.nama, total, item: itemNames, waktu });
+
+                // JALANKAN PROSES CETAK STRUK FISIK (Jika Bluetooth Terkoneksi)
+                await cetakStrukThermal(user.nama, arrayRincianUntukCetak, total, saldoBaru, waktu);
 
                 // WA GATEWAY
                 if (user.wa) {
