@@ -14,7 +14,7 @@
         <div class="flex justify-between items-center mb-6">
             <div class="bg-indigo-900 p-6 rounded-[2rem] text-white shadow-xl flex-1 mr-4 border-b-4 border-yellow-400">
                 <h1 class="text-xl font-black italic uppercase text-yellow-400">PRO KASIR 🚀</h1>
-                <p class="text-[9px] font-bold opacity-60 uppercase tracking-widest italic">Scanner Bluetooth & WA Gateway: AKTIF</p>
+                <p class="text-[9px] font-bold opacity-60 uppercase tracking-widest italic">Scanner USB/Bluetooth & WA Gateway: AKTIF</p>
             </div>
             <button id="btnHubungkanPrinter" onclick="hubungkanPrinter()" class="bg-amber-500 p-6 rounded-[2rem] shadow font-black text-white text-xs mr-2 border-2 border-amber-400 transition-transform active:scale-90 flex items-center gap-1">🖨️ KONEK PRINTER</button>
             <button onclick="window.location.href='index.html'" class="bg-white p-6 rounded-[2rem] shadow font-black text-indigo-900 text-xs border-2 border-slate-100 transition-transform active:scale-90">PORTAL</button>
@@ -45,8 +45,8 @@
                     <button id="btnCheckout" onclick="bukaScanner()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-xs tracking-widest transition-all">BAYAR SEKARANG ✅</button>
                     <button onclick="resetCart()" class="w-full mt-3 text-slate-300 hover:text-red-400 font-bold text-[9px] uppercase transition-colors">Kosongkan Keranjang</button>
                     
-                    <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        <p class="text-[8px] text-center text-slate-400 font-bold uppercase tracking-tighter italic">Scanner Bluetooth Siap: Langsung scan kartu kapan saja</p>
+                    <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-1">
+                        <p class="text-[8px] text-center text-slate-400 font-bold uppercase tracking-tighter italic">🔌 Scanner USB / Bluetooth Siap: Langsung scan kartu kapan saja</p>
                     </div>
                 </div>
             </div>
@@ -133,7 +133,6 @@
         // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH (VERSI UNIVERSAL ANTI-GATT ERROR) ---
         async function hubungkanPrinter() {
             try {
-                // Mencari perangkat Bluetooth secara bebas tanpa filter ketat UUID yang memicu limitasi keamanan browser
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
@@ -150,7 +149,6 @@
                 const service = services[0];
                 const characteristics = await service.getCharacteristics();
                 
-                // Cari alur kirim data yang mendukung penulisan bypass (writeWithoutResponse) agar tidak terkena cek perizinan GATT
                 printerCharacteristic = characteristics.find(c => c.properties.writeWithoutResponse || c.properties.write);
                 
                 if (!printerCharacteristic) {
@@ -198,7 +196,7 @@
             let spasiSaldo = 24 - "SALDO:".length - saldoStr.length;
             struk += "SALDO:" + " ".repeat(spasiSaldo) + saldoStr + "\n";
             struk += "========================\n";
-            struk += "  Terima Kasih, Jajan  \n";
+            struk += "  Terima Kasih, Jajan   \n";
             struk += "    Sehat Hari Ini!     \n\n\n\n";
 
             const encoder = new TextEncoder();
@@ -207,7 +205,6 @@
             const CHUNK_SIZE = 20;
             for (let i = 0; i < textBuffer.length; i += CHUNK_SIZE) {
                 const chunk = textBuffer.slice(i, i + CHUNK_SIZE);
-                // Eksekusi penulisan bypass tanpa umpan balik izin jika didukung chip printer
                 if (printerCharacteristic.properties.writeWithoutResponse) {
                     await printerCharacteristic.writeValueWithoutResponse(chunk);
                 } else {
@@ -236,7 +233,7 @@
 
                 const cartSummary = {};
                 let teksRincianBelanja = "";
-                const arrayRincianUntukCetak = []; // Data rapi untuk printer
+                const arrayRincianUntukCetak = [];
                 
                 cart.forEach(item => {
                     const key = `${item.stan}|${item.idMenu}`;
@@ -285,28 +282,35 @@
             } catch (err) {
                 alert("❌ GAGAL: " + err.message);
             } finally {
-                // Buka kunci kembali setelah proses benar-benar selesai
                 isProcessing = false; 
                 btn.innerText = "BAYAR SEKARANG ✅"; 
                 btn.disabled = false; 
             }
         }
 
-        // SCANNER BLUETOOTH
+        // --- DUAL SCANNER HANDLER: USB BARCODE SCANNER & BLUETOOTH SCANNER ---
         let barcodeBuffer = "";
         let lastKeyTime = Date.now();
+        
         window.addEventListener("keydown", (e) => {
             const currentTime = Date.now();
-            if (currentTime - lastKeyTime > 50) barcodeBuffer = "";
+            
+            // Scanner USB bekerja sangat cepat (interval antar karakter < 100ms).
+            // Jika jeda pengetikan lebih dari 100ms, anggap buffer baru/reset.
+            if (currentTime - lastKeyTime > 100) {
+                barcodeBuffer = "";
+            }
+            
             if (e.key === "Enter") {
                 if (barcodeBuffer.length > 2 && !isProcessing) { 
                     e.preventDefault();
                     prosesBayar(barcodeBuffer); 
                     barcodeBuffer = ""; 
                 }
-            } else if (e.key.length === 1) {
+            } else if (e.key.length === 1) { // Menangkap karakter alfanumerik biasa
                 barcodeBuffer += e.key;
             }
+            
             lastKeyTime = currentTime;
         });
 
