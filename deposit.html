@@ -21,7 +21,7 @@
         <div id="scannerContainer" class="bg-white p-4 rounded-[2.5rem] shadow-sm mb-6 border border-emerald-50">
             <div id="reader" class="rounded-[2rem] overflow-hidden border-4 border-emerald-50 mb-4"></div>
             <p class="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Arahkan Barcode ID Siswa ke Kamera</p>
-            <p class="text-center text-[8px] font-bold text-emerald-600 mt-2 uppercase">Atau Scan Langsung dengan Alat Bluetooth/USB</p>
+            <p class="text-center text-[8px] font-bold text-emerald-600 mt-2 uppercase">Atau Scan Langsung dengan Alat Bluetooth/USB Scanner</p>
         </div>
 
         <div id="depositForm" class="hidden space-y-4">
@@ -173,31 +173,37 @@
             location.reload();
         }
 
-        /** * FITUR TAMBAHAN: SCAN BARCODE EKSTERNAL (BLUETOOTH / USB)
-         * Menangkap input cepat dari scanner fisik
+        /** 
+         * DUKUNGAN PENUH SCANNER EKSTERNAL (USB SCANNER & BLUETOOTH)
+         * Menangkap rentetan karakter berkecepatan tinggi dari Scanner USB/Bluetooth.
          */
         let barcodeBuffer = "";
         let lastKeyTime = Date.now();
 
         window.addEventListener("keydown", (e) => {
+            // Hindari memproses scanner USB jika pengguna sedang fokus mengetik angka nominal
+            if (document.activeElement && document.activeElement.id === 'nominalAksi') {
+                return;
+            }
+
             const currentTime = Date.now();
             
-            // Logika pendeteksi scanner (kecepatan ketik tinggi)
-            if (currentTime - lastKeyTime > 50) {
+            // Batas jeda waktu ditingkatkan ke 100ms untuk mendukung transmisi USB Scanner
+            if (currentTime - lastKeyTime > 100) {
                 barcodeBuffer = "";
             }
 
-            if (e.key !== "Enter") {
-                if (e.key.length === 1) {
-                    barcodeBuffer += e.key;
-                }
-            } else {
-                if (barcodeBuffer.length > 0) {
+            if (e.key === "Enter") {
+                if (barcodeBuffer.trim().length > 0) {
+                    e.preventDefault();
                     const cleanID = barcodeBuffer.trim();
                     cariSiswa(cleanID);
                     barcodeBuffer = ""; 
                 }
+            } else if (e.key.length === 1) {
+                barcodeBuffer += e.key;
             }
+            
             lastKeyTime = currentTime;
         });
     </script>
