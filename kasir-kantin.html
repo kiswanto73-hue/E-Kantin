@@ -130,15 +130,15 @@
         function removeItem(idx) { cart.splice(idx,1); updateCartDisplay(); }
         function resetCart() { cart = []; updateCartDisplay(); }
 
-        // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH (VERSI UNIVERSAL ANTI-GATT ERROR) ---
+        // --- FUNGSI KONEKSI PRINTER THERMAL BLUETOOTH ---
         async function hubungkanPrinter() {
             try {
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
-                        '000018f0-0000-1000-8000-00805f9b34fb', // Protokol Umum 1
-                        '0000ff00-0000-1000-8000-00805f9b34fb', // Protokol Umum 2
-                        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'  // Protokol Umum 3
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '0000ff00-0000-1000-8000-00805f9b34fb',
+                        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
                     ]
                 });
                 
@@ -214,11 +214,11 @@
         }
 
         async function prosesBayar(idSiswa) {
-            if(isProcessing) return; // JIKA SEDANG PROSES, ABAIKAN INPUT LAIN
+            if(isProcessing) return;
             if(cart.length === 0) return alert("Pilih menu dulu!");
 
             const btn = document.getElementById('btnCheckout');
-            isProcessing = true; // Kunci proses
+            isProcessing = true;
             btn.innerText = "SEDANG MEMPROSES..."; 
             btn.disabled = true; 
 
@@ -253,10 +253,12 @@
                     arrayRincianUntukCetak.push(item);
                 }
 
-                // EKSEKUSI DATABASE
-                for (let item of cart) {
-                    await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + 1);
+                // EKSEKUSI DATABASE - SINKRONISASI STOK LEBIH AMAN
+                for (let key in cartSummary) {
+                    const item = cartSummary[key];
+                    await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + item.qty);
                 }
+                
                 const saldoBaru = user.saldo - total;
                 await db.ref('kantin_users/' + trimmedId + '/saldo').set(saldoBaru);
 
@@ -264,16 +266,30 @@
                 const itemNames = cart.map(i => i.nama).join(", ");
                 await db.ref('kantin_laporan').push({ idSiswa: trimmedId, namaSiswa: user.nama, total, item: itemNames, waktu });
 
-                // JALANKAN PROSES CETAK STRUK FISIK (Jika Bluetooth Terkoneksi)
+                // JALANKAN PROSES CETAK STRUK FISIK
                 await cetakStrukThermal(user.nama, arrayRincianUntukCetak, total, saldoBaru, waktu);
 
-                // WA GATEWAY
+                // FONNTE WA GATEWAY (DENGAN FORMAT NOMOR & LOGGING TERPERINCI)
                 if (user.wa) {
+                    let phone = user.wa.toString().replace(/[^0-9]/g, '');
+                    if (phone.startsWith('0')) {
+                        phone = '62' + phone.slice(1);
+                    }
+
                     const pesan = `*STRUK DIGITAL SDN 169*\n\nNama: *${user.nama}*\nBelanja:${teksRincianBelanja}\n--------------------------\n*Total: Rp ${total.toLocaleString()}*\nSisa Saldo: *Rp ${saldoBaru.toLocaleString()}*\n\n_Waktu: ${waktu}_`;
+                    
                     const fd = new FormData();
-                    fd.append('target', user.wa); 
+                    fd.append('target', phone); 
                     fd.append('message', pesan);
-                    fetch('https://api.fonnte.com/send', { method:'POST', headers:{'Authorization':FONNTE_TOKEN}, body:fd });
+                    
+                    fetch('https://api.fonnte.com/send', { 
+                        method: 'POST', 
+                        headers: { 'Authorization': FONNTE_TOKEN.trim() }, 
+                        body: fd 
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log("Response Fonnte WA:", data))
+                    .catch(err => console.error("Gagal Request Fonnte WA:", err));
                 }
 
                 alert(`✅ BERHASIL!\nSiswa: ${user.nama}\nSisa Saldo: Rp ${saldoBaru.toLocaleString()}`);
@@ -295,8 +311,6 @@
         window.addEventListener("keydown", (e) => {
             const currentTime = Date.now();
             
-            // Scanner USB bekerja sangat cepat (interval antar karakter < 100ms).
-            // Jika jeda pengetikan lebih dari 100ms, anggap buffer baru/reset.
             if (currentTime - lastKeyTime > 100) {
                 barcodeBuffer = "";
             }
@@ -307,7 +321,7 @@
                     prosesBayar(barcodeBuffer); 
                     barcodeBuffer = ""; 
                 }
-            } else if (e.key.length === 1) { // Menangkap karakter alfanumerik biasa
+            } else if (e.key.length === 1) {
                 barcodeBuffer += e.key;
             }
             
