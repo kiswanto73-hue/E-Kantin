@@ -225,6 +225,7 @@
             const trimmedId = idSiswa.trim();
             
             try {
+                // 1. Ambil Data User/Siswa dari Firebase
                 const userSnap = await db.ref('kantin_users/' + trimmedId).once('value');
                 const user = userSnap.val();
 
@@ -253,7 +254,7 @@
                     arrayRincianUntukCetak.push(item);
                 }
 
-                // EKSEKUSI DATABASE - SINKRONISASI STOK LEBIH AMAN
+                // 2. Potong Stok Menu & Kurangi Saldo Siswa
                 for (let key in cartSummary) {
                     const item = cartSummary[key];
                     await db.ref(`kantin_menus/${item.stan}/${item.idMenu}/terjual`).transaction(c => (c || 0) + item.qty);
@@ -266,16 +267,16 @@
                 const itemNames = cart.map(i => i.nama).join(", ");
                 await db.ref('kantin_laporan').push({ idSiswa: trimmedId, namaSiswa: user.nama, total, item: itemNames, waktu });
 
-                // JALANKAN PROSES CETAK STRUK FISIK
+                // 3. Jalankan Cetak Struk Printer Bluetooth
                 await cetakStrukThermal(user.nama, arrayRincianUntukCetak, total, saldoBaru, waktu);
 
-                // FONNTE WA GATEWAY (PENYESUAIAN LOGIKA FORMAT NOMOR & RESPONS API)
+                // 4. Kirim Struk Digital via Fonnte WhatsApp Gateway
                 if (user.wa) {
                     let phone = user.wa.toString().replace(/[^0-9]/g, '');
                     if (phone.startsWith('0')) {
                         phone = '62' + phone.slice(1);
                     } else if (phone.startsWith('8')) {
-                        phone = '62' + phone.slice(1);
+                        phone = '628' + phone.slice(1);
                     }
 
                     const pesan = `*STRUK DIGITAL SDN 169*\n\nNama: *${user.nama}*\nBelanja:${teksRincianBelanja}\n--------------------------\n*Total: Rp ${total.toLocaleString()}*\nSisa Saldo: *Rp ${saldoBaru.toLocaleString()}*\n\n_Waktu: ${waktu}_`;
@@ -294,7 +295,7 @@
                     .then(data => {
                         console.log("Response Fonnte WA:", data);
                         if (!data.status) {
-                            alert("⚠️ WA Struk Gagal: " + (data.reason || data.message || "Cek Fonnte"));
+                            alert("⚠️ Struk WA Gagal Terkirim:\n" + (data.reason || data.message || "Periksa koneksi/kuota Fonnte Anda"));
                         }
                     })
                     .catch(err => console.error("Gagal Request Fonnte WA:", err));
