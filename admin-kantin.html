@@ -61,9 +61,11 @@
                         <input type="text" id="namaSiswa" placeholder="Nama Lengkap" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none uppercase focus:ring-2 ring-indigo-500">
                         <select id="kelasSiswa" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
                             <option value="">-- Pilih Kelas --</option>
+                            <option value="Kelas TK">Kelas TK</option>
                             <option value="Kelas 1">Kelas 1</option><option value="Kelas 2">Kelas 2</option>
                             <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
+                            <option value="LULUS">LULUS</option>
                             <option value="GURU">Guru / Staf</option>
                             <option value="TAMU">TAMU / UMUM</option>
                         </select>
@@ -79,6 +81,36 @@
                         </div>
                         <input type="text" id="waSiswa" placeholder="No WA (628...)" class="w-full p-4 bg-indigo-50 rounded-2xl font-bold text-xs outline-none">
                         <button onclick="updateSiswa()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest active:scale-95">Simpan Data</button>
+                    </div>
+                </div>
+
+                <!-- MUTASI / KENAIKAN KELAS -->
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 mt-6">
+                    <h3 class="text-[10px] font-black text-indigo-600 mb-4 uppercase">Mutasi / Kenaikan Kelas</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[8px] font-bold text-slate-400 ml-2">DARI KELAS</label>
+                            <select id="mutasiAsal" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
+                                <option value="">-- Kelas Asal --</option>
+                                <option value="Kelas TK">Kelas TK</option><option value="Kelas 1">Kelas 1</option>
+                                <option value="Kelas 2">Kelas 2</option><option value="Kelas 3">Kelas 3</option>
+                                <option value="Kelas 4">Kelas 4</option><option value="Kelas 5">Kelas 5</option>
+                                <option value="Kelas 6">Kelas 6</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-bold text-slate-400 ml-2">PINDAH KE</label>
+                            <select id="mutasiTujuan" class="w-full p-4 bg-slate-50 rounded-2xl font-bold text-xs outline-none">
+                                <option value="">-- Kelas Tujuan --</option>
+                                <option value="Kelas TK">Kelas TK</option><option value="Kelas 1">Kelas 1</option>
+                                <option value="Kelas 2">Kelas 2</option><option value="Kelas 3">Kelas 3</option>
+                                <option value="Kelas 4">Kelas 4</option><option value="Kelas 5">Kelas 5</option>
+                                <option value="Kelas 6">Kelas 6</option><option value="LULUS">LULUS</option>
+                            </select>
+                        </div>
+                        <button onclick="mutasiKelas()" class="w-full bg-slate-800 text-white font-black py-3 rounded-2xl uppercase text-[10px] tracking-widest active:scale-95">Pindahkan Satu Kelas</button>
+                        <button onclick="naikKelasOtomatis()" class="w-full bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg uppercase text-[10px] tracking-widest active:scale-95">Naik Kelas Otomatis (Semua) 🎓</button>
+                        <p class="text-[8px] text-slate-400 leading-relaxed">Otomatis: TK→1, 1→2, ... 5→6, 6→LULUS. Guru/Staf, Tamu, dan yang sudah LULUS tidak berubah. Saldo tidak diubah.</p>
                     </div>
                 </div>
             </div>
@@ -120,9 +152,11 @@
                         <h3 class="text-[10px] font-black text-slate-400 uppercase">Daftar Akun</h3>
                         <select id="filterKelas" onchange="loadData()" class="p-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black outline-none">
                             <option value="SEMUA">SEMUA KELAS</option>
+                            <option value="Kelas TK">Kelas TK</option>
                             <option value="Kelas 1">Kelas 1</option><option value="Kelas 2">Kelas 2</option>
                             <option value="Kelas 3">Kelas 3</option><option value="Kelas 4">Kelas 4</option>
                             <option value="Kelas 5">Kelas 5</option><option value="Kelas 6">Kelas 6</option>
+                            <option value="LULUS">LULUS</option>
                             <option value="GURU">GURU/STAF</option>
                             <option value="TAMU">TAMU</option>
                         </select>
@@ -147,6 +181,35 @@
         const db = firebase.database();
         const auth = firebase.auth();
         let myChart = null;
+
+        // ====== FOTO KARTU (disimpan di Google Sheet + Drive, bukan di Firebase) ======
+        // Tempel link CSV hasil "Publikasikan ke web" Google Sheet di sini.
+        // Kolom A = ID Kartu/NIS, Kolom B = link foto Google Drive.
+        // Dikosongkan = kartu dicetak tanpa foto (kotak "FOTO").
+        const FOTO_SHEET_CSV_URL = "";
+
+        function linkKeGambar(url) {
+            const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            return m ? "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w300" : url;
+        }
+
+        async function ambilPetaFoto() {
+            const peta = {};
+            if (!FOTO_SHEET_CSV_URL) return peta;
+            try {
+                const res = await fetch(FOTO_SHEET_CSV_URL);
+                const teks = await res.text();
+                teks.split(/\r?\n/).forEach((baris, i) => {
+                    const kol = baris.split(",");
+                    if (kol.length < 2) return;
+                    const id = kol[0].replace(/"/g, "").trim();
+                    const link = kol.slice(1).join(",").replace(/"/g, "").trim();
+                    if (i === 0 && !/^https?:/i.test(link)) return; // lewati baris judul
+                    if (id && link) peta[id] = linkKeGambar(link);
+                });
+            } catch (e) { console.warn("Foto tidak termuat:", e); }
+            return peta;
+        }
 
         auth.onAuthStateChanged(user => {
             if (user) { loadData(); loadStokChart(); } 
@@ -267,6 +330,49 @@
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
 
+        // ====== MUTASI / KENAIKAN KELAS ======
+        const URUTAN_KELAS = ["Kelas TK","Kelas 1","Kelas 2","Kelas 3","Kelas 4","Kelas 5","Kelas 6","LULUS"];
+
+        async function mutasiKelas() {
+            const asal = document.getElementById('mutasiAsal').value;
+            const tujuan = document.getElementById('mutasiTujuan').value;
+            if (!asal || !tujuan) return alert("Pilih kelas asal dan kelas tujuan!");
+            if (asal === tujuan) return alert("Kelas asal dan tujuan sama!");
+            try {
+                const snap = await db.ref('kantin_users').once('value');
+                const upd = {}; let n = 0;
+                snap.forEach(s => {
+                    if (s.val().kelas === asal) { upd[s.key + '/kelas'] = tujuan; n++; }
+                });
+                if (n === 0) return alert("Tidak ada siswa di " + asal);
+                if (!confirm("Pindahkan " + n + " siswa dari " + asal + " ke " + tujuan + "?")) return;
+                await db.ref('kantin_users').update(upd);
+                alert("Berhasil memindahkan " + n + " siswa ke " + tujuan + ".");
+            } catch (e) { alert("Gagal: " + e.message); }
+        }
+
+        async function naikKelasOtomatis() {
+            try {
+                const snap = await db.ref('kantin_users').once('value');
+                const upd = {}; const ringkas = {};
+                snap.forEach(s => {
+                    const k = s.val().kelas;
+                    const i = URUTAN_KELAS.indexOf(k);
+                    if (i >= 0 && i < URUTAN_KELAS.length - 1) {
+                        upd[s.key + '/kelas'] = URUTAN_KELAS[i + 1];
+                        ringkas[k] = (ringkas[k] || 0) + 1;
+                    }
+                });
+                const total = Object.keys(upd).length;
+                if (total === 0) return alert("Tidak ada siswa yang bisa dinaikkan.");
+                const rincian = URUTAN_KELAS.filter(k => ringkas[k])
+                    .map(k => k + " → " + URUTAN_KELAS[URUTAN_KELAS.indexOf(k) + 1] + " (" + ringkas[k] + " siswa)").join("\n");
+                if (!confirm("KENAIKAN KELAS untuk " + total + " siswa:\n\n" + rincian + "\n\nLanjutkan?")) return;
+                await db.ref('kantin_users').update(upd);
+                alert("Kenaikan kelas berhasil untuk " + total + " siswa.");
+            } catch (e) { alert("Gagal: " + e.message); }
+        }
+
         function logout() { auth.signOut().then(() => location.href = "login.html"); }
         function hapusSiswa(id) { if(confirm("Hapus?")) db.ref('kantin_users').child(id).remove(); }
         
@@ -316,25 +422,47 @@
                 XLSX.utils.book_append_sheet(wb, ws, "Saldo"); XLSX.writeFile(wb, "Data_Saldo_Siswa.xlsx");
             });
         }
-        function cetakKolektif() {
+
+        // --- CETAK KARTU: dengan FOTO (dari Google Sheet) dan QR diperbesar ---
+        async function cetakKolektif() {
             const kl = document.getElementById('filterKelas').value;
-            const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>Cetak</title><style>@page{size:A4;margin:5mm}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{width:50mm;height:82mm;border:2px solid #312e81;border-radius:10px;text-align:center;padding:5px;font-family:sans-serif;page-break-inside:avoid}.h{background:#312e81;color:white;padding:5px;font-size:10px}</style></head><body><div class="grid">`);
-            db.ref('kantin_users').once('value', snap => {
-                snap.forEach(s => {
-                    const d = s.val(); if(kl === "SEMUA" || d.kelas === kl) {
-                        win.document.write(`<div class="card"><div class="h">SDN 165 TJB</div><div style="margin:10px;height:25mm;border:1px dashed #ccc">FOTO</div><b style="font-size:10px">${d.nama}</b><br><small>${d.kelas}</small><div id="q-${d.id}" style="margin:10px;display:flex;justify-content:center"></div></div>`);
-                    }
-                });
-                win.document.write(`</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>`);
-                snap.forEach(s => {
-                    const d = s.val(); if(kl === "SEMUA" || d.kelas === kl) {
-                        win.document.write(`new QRCode(document.getElementById("q-${d.id}"), {text:"${d.id}", width:60, height:60});`);
-                    }
-                });
-                win.document.write(`setTimeout(()=>{window.print()},1000)<\/script></body></html>`);
-                win.document.close();
+            const win = window.open('', '_blank'); // dibuka dulu agar tidak diblokir popup
+            if (!win) return alert("Popup diblokir browser. Izinkan popup lalu coba lagi.");
+            win.document.write("<p style='font-family:sans-serif'>Menyiapkan kartu...</p>");
+
+            const fotoMap = await ambilPetaFoto();
+            const snap = await db.ref('kantin_users').once('value');
+
+            win.document.open();
+            win.document.write(`<html><head><title>Cetak</title><style>
+                @page{size:A4;margin:5mm}
+                *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+                .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+                .card{width:50mm;height:88mm;border:2px solid #312e81;border-radius:10px;text-align:center;padding:5px;font-family:sans-serif;page-break-inside:avoid}
+                .h{background:#312e81;color:white;padding:5px;font-size:10px}
+                .foto{margin:8px auto;width:25mm;height:30mm;border:1px dashed #ccc;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999}
+                .foto img{width:100%;height:100%;object-fit:cover}
+            </style></head><body><div class="grid">`);
+
+            snap.forEach(s => {
+                const d = s.val();
+                if (kl === "SEMUA" || d.kelas === kl) {
+                    const foto = fotoMap[d.id]
+                        ? `<img src="${fotoMap[d.id]}" referrerpolicy="no-referrer" onerror="this.parentNode.innerHTML='FOTO'">`
+                        : 'FOTO';
+                    win.document.write(`<div class="card"><div class="h">SDN 165 TJB</div><div class="foto">${foto}</div><b style="font-size:10px">${d.nama}</b><br><small>${d.kelas}</small><div id="q-${d.id}" style="margin:6px auto;padding:2mm;background:#fff;width:fit-content"></div></div>`);
+                }
             });
+
+            win.document.write(`</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>`);
+            snap.forEach(s => {
+                const d = s.val();
+                if (kl === "SEMUA" || d.kelas === kl) {
+                    win.document.write(`new QRCode(document.getElementById("q-${d.id}"), {text:"${d.id}", width:100, height:100, correctLevel: QRCode.CorrectLevel.M});`);
+                }
+            });
+            win.document.write(`Promise.all(Array.from(document.images).map(function(i){return i.complete?1:new Promise(function(r){i.onload=i.onerror=r})})).then(function(){setTimeout(function(){window.print()},800)});<\/script></body></html>`);
+            win.document.close();
         }
     </script>
 </body>
